@@ -1,8 +1,8 @@
 # motorizedstage-controls-
 This project was created to help our team with laser fabrication of microfluidic chips.
 
-Files structure and where to look for what:
-DAO(folder) - DATA ACCESS OBJECT
+## Files structure and where to look for what:\
+DAO(folder) - DATA ACCESS OBJECT\
 |- x64(folder) - files needed for the stage to move
 |yaml(folder) - files that defy the x64 library
 | | config.yaml - some values for the gui
