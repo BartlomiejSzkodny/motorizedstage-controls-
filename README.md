@@ -2,7 +2,7 @@
 This project was created to help our team with laser fabrication of microfluidic chips.
 
 ### Files structure and where to look for what:
-motorizedstage-controls\
+programFiles\
 |DAO(folder) - DATA ACCESS OBJECT\
 ||- x64(folder) - files needed for the stage to move\
 ||yaml(folder) - files that defy the x64 library\
@@ -21,7 +21,7 @@ motorizedstage-controls\
 || stage_models.py -these are used for errors and signals\
 |laserStageControll.py - file that connects CLI and the instructions for the stage\
 |stage.py - commands for the stage\
-|stageCLI - CLI controling the commands of the user\
+|stageCLI - CLI controling the commands of the user
 
 
 
