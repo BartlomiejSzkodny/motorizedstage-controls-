@@ -7,16 +7,26 @@ from programFiles.errors.errors import StageExecuteError
 from programFiles.factories.commands_factory import CommandsFactory
 from programFiles.models.stage_models import DaoResponse, DaoError
 
-
+"""_summary_: Class that represents the stage DAO
+"""
 class StageDAO:
+    """_summary_: Constructor for the StageDAO class
+    :param prior_connector: PriorConnector
+    """
     def __init__(self, prior_connector: PriorConnector):
         self.__logger = logging.getLogger(__name__)
         self.__stage = prior_connector
-        self.__actual_speed = 1000
+        self.__actual_speed = 1000#default speed for the stage
         self.running = False
-        self.position = [0, 0]
+        self.position = [0, 0] #default position for the stage
         self.__running_lock = Lock()
 
+        """_summary_: function to move the stage to a specific position
+        :param x: int
+        :param y: int
+        :param speed: int
+        :return: DaoResponse it contains the response from the stage
+        """
     def goto_position(self, x: int, y: int, speed: int) -> DaoResponse:
         try:
             if self.__actual_speed != speed:
@@ -30,6 +40,11 @@ class StageDAO:
             return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
                                                             return_status=err.msg))
 
+        """_summary_: function to move the stage at a specific velocity
+        :param x_speed: int
+        :param y_speed: int
+        :return: DaoResponse it contains the response from the stage
+        """
     def move_at_velocity(self, x_speed: int, y_speed: int) -> DaoResponse:
         try:
             command = CommandsFactory.move_at_velocity(x_speed, y_speed)
@@ -39,6 +54,9 @@ class StageDAO:
             return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
                                                             return_status=err.msg))
 
+        """_summary_: function to check the stage limits
+        :return: DaoResponse it contains the response from the stage
+        """
     def check_stage_limits(self) -> DaoResponse:
         try:
             command = CommandsFactory.get_limits()
@@ -48,6 +66,8 @@ class StageDAO:
             return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
                                                             return_status=err.msg))
 
+        """_summary_: function to set the stage position, for example to calibrate the stage
+        """
     def set_position(self, x: int, y: int) -> DaoResponse:
         try:
             command = CommandsFactory.set_position(x, y)
@@ -57,6 +77,8 @@ class StageDAO:
             return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
                                                             return_status=err.msg))
 
+        """_summary_: function to get the stage position
+        """
     def get_position(self) -> DaoResponse[List]:
         try:
             command = CommandsFactory.get_position()
@@ -71,6 +93,8 @@ class StageDAO:
                                                              description=str(err),
                                                              return_status=err.msg))
 
+        """_summary_: function to get the stage name
+        """
     def get_running(self) -> DaoResponse[bool]:
         try:
             command = CommandsFactory.get_busy()
@@ -81,7 +105,8 @@ class StageDAO:
             return DaoResponse[bool](data=None, error=DaoError(error=ServiceError.STAGE_ERROR,
                                                                description=str(err),
                                                                return_status=err.msg))
-
+        """_summary_: function to stop the stage
+        """
     def stop_stage(self) -> DaoResponse[bool]:
         try:
             command = CommandsFactory.stop_smoothly()
@@ -91,12 +116,14 @@ class StageDAO:
             return DaoResponse[bool](data=None, error=DaoError(error=ServiceError.STAGE_ERROR,
                                                                description=str(err),
                                                                return_status=err.msg))
-
+        """_summary_: function to set the running status of the stage
+        """
     def set_running(self, running: bool):
         self.__running_lock.acquire()
         self.running = running
         self.__running_lock.release()
-
+        """_summary_: function to get the running status of the stage
+        """
     def get_running(self) -> bool:
         self.__running_lock.acquire()
         running = self.running

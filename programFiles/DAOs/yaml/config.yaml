@@ -3,4 +3,4 @@ ports_params:
   stage: COM4
 stage_params:
   COM: 6
-  path: ./app/stage/x64/PriorScientificSDK.dll
+  path: ./programFiles/DAOs/x64/PriorScientific.dll
