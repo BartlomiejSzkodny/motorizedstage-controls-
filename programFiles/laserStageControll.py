@@ -1,5 +1,6 @@
 from programFiles.stage import Stage
 from programFiles.stageCLI import StageCli
+from programFiles.DAOs.prior_connector import PriorConnector
 
 
 class LaserStageControll(Stage) :

@@ -2,7 +2,7 @@ from typing import TypeVar, Generic
 
 from pydantic import BaseModel
 
-from app.enums.service_errors import ServiceError
+from programFiles.errors.service_errors import ServiceError
 
 T = TypeVar("T", bound=BaseModel)
 
