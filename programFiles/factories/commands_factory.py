@@ -1,4 +1,4 @@
-from app.stage.enums.stage_commands import BasicCommands, ControlCommands
+from programFiles.DAOs.stage_commands import BasicCommands, ControlCommands
 
 
 class CommandsFactory:

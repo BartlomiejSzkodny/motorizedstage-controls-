@@ -1,7 +1,13 @@
 from programFiles.laserStageControll import LaserStageControll
-if __name__ == '__main__':
-    try:
-        # Create a new instance of the class
-        LaserStageControll().run()
-    except Exception as e:
-        print(f"An error occurred: {e}")
+
+def main() -> int:
+    laserStageControll = LaserStageControll()
+    laserStageControll.run()
+    print("Program finished")
+    return 0
+
+if __name__ == "__main__":
+    while True:
+        main()
+        if input("Do you want to run the program again? (y/n): ") == "n":
+            break

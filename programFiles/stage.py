@@ -1,11 +1,14 @@
 from programFiles.errors.service_errors import ServiceError
 from programFiles.DAOs.prior_connector import PriorConnector
+from programFiles.DAOs.yaml.yaml_manager import YamlData
 
 class Stage:
     """Class that represents the stage object
     """
     def __init__(self):
-        self.__prior_connector = PriorConnector()
+        print("Stage initialized")
+        self.__prior_connector = PriorConnector(YamlData().get_stage_ddl_path(), 1024)
+        print("PriorConnector initialized")
         self.__is_prior_connected = False
 
         """function to initialize the prior stage, it connects to the stage via COM port and opens a session
