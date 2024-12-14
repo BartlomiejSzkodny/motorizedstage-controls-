@@ -13,6 +13,8 @@ class StageCli():
             print("*\n"*5)
             print("List of commands:")
             print("help - shows the list of commands")
+            print("velmove - moves the stage at a specific velocity")
+            print("goto - moves the stage")
             print("exit - exits the program")
         if command == "velmove":
             x = input("Enter the x position: ")
