@@ -5,9 +5,7 @@ import yaml
 
 class YamlData:
     def __init__(self, filename='programFiles/DAOs/yaml/config.yaml'):
-        print("YamlData initialized")
         self.filename = filename
-        print("YamlData file opened")
         with open(filename) as f:  
             self.data = yaml.safe_load(f)
             f.close()
