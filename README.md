@@ -24,6 +24,10 @@ programFiles\
 |stageCLI - CLI controling the commands of the user
 
 
+temp
+biblioteki które dodałem pydantic i to działa, kompiluje na pythonie 3.8.20
+
+
 
 
 

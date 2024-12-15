@@ -19,7 +19,7 @@ class Stage:
         :param com_port: str
         :return: ServiceError
         """
-    def init_prior(self, com_port: str) -> ServiceError:
+    def init_prior(self, com_port: str) -> ServiceError:#TODO chłopakom tutaj przekazuje ładnie COM porty , używają tej samej biblioteki pyserial(mi przyszła z pythonem nie wiem o co chodzi) więc może trzeba ją zainstalować
         try:
             com_port = int(com_port[3:])
             self.__prior_connector.initialize(com_port)
@@ -29,6 +29,7 @@ class Stage:
                 return ServiceError.OK
             return ServiceError.PRIOR_CONNECT_ERROR
         except Exception as e:
+            print("Failed to connect to the stage")
             return ServiceError.PRIOR_CONNECT_ERROR
     
     def goto_position(self, x: int, y: int, speed: int) -> DaoResponse:
