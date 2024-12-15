@@ -23,10 +23,12 @@ class StageCli():
         if command == "connect":
             print("Available COM ports:")
             ports = list_ports.comports()
-            if not ports:
+            ports_sanitized = [
+                port for port in ports if "n/a" not in port.description.lower()]
+            if not ports_sanitized:
                 print("No COM ports found.")
             else:
-                for i, port in enumerate(ports):
+                for i, port in enumerate(ports_sanitized):
                     print(f"{i}->{port.device} - {port.description}")
                 k = input("Enter the COM port: ")
                 self.stage.init_prior(ports[int(k)])
