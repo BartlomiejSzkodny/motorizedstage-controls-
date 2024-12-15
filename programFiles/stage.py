@@ -9,7 +9,7 @@ from programFiles.models.stage_models import DaoResponse, DaoError
 class Stage:
     """Class that represents the stage object
     """
-    def __init__(self):
+    def __init__(self, prior_connector: PriorConnector):
         self.__prior_connector = PriorConnector(YamlData().get_stage_ddl_path(), 1000)
         self.__stage_dao = StageDAO(self.__prior_connector)
         self.__actual_speed = 1000
@@ -41,6 +41,15 @@ class Stage:
             command = CommandsFactory.goto_position(x, y)
             response = self.__prior_connector.execute(command)
             return DaoResponse[str](data=response, error=DaoError(error=ServiceError.OK, description=""))
+        except StageExecuteError as err:
+            return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
+                                                            return_status=err.msg))
+        
+    def move_at_velocity(self, x_speed: int, y_speed: int) -> DaoResponse:
+        try:
+            command = CommandsFactory.move_at_velocity(x_speed, y_speed)
+            return_status = self.__stage.execute(command)
+            return DaoResponse[str](data=return_status, error=DaoError(error=ServiceError.OK, description=""))
         except StageExecuteError as err:
             return DaoResponse[str](data="", error=DaoError(error=ServiceError.STAGE_ERROR, description=str(err),
                                                             return_status=err.msg))
