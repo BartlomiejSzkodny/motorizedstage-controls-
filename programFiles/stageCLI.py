@@ -7,7 +7,7 @@ from programFiles.DAOs.yaml.yaml_manager import YamlData
 class StageCli():
     def __init__(self):
         self.__yaml = YamlData()
-        self.__prior_connector = PriorConnector(self.__yaml.get_stage_ddl_path(), BUFFER_SIZE)
+        self.__prior_connector = PriorConnector(self.__yaml.get_stage_ddl_path(), 1000)
         self.__stage = Stage(self.__prior_connector)
         print("*\n"*20)
         print("Cli is now running")
