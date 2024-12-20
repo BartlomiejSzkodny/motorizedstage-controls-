@@ -1,6 +1,0 @@
-ports_params:
-  laser: COM4
-  stage: COM4
-stage_params:
-  COM: 6
-  path: ./programFiles/DAOs/x64/PriorScientific.dll
