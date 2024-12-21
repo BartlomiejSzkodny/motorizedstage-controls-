@@ -144,47 +144,32 @@ class STLApp:
 
         
     def process_layers(self):
+        
         line_spacing = self.line_spacing_var.get()
         for layer_index, section in enumerate(self.sections):
             self.laser_ax.clear()
             if section is not None:
                 polygons = section.polygons_full
                 for polygon in polygons:
+                    print(polygon.interiors)
                     x, y = polygon.exterior.xy
                     min_y, max_y = min(y), max(y)
                     y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
                     for y_line in y_lines:
                         intersections = []
                         for i in range(len(x) - 1):
-                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
+                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]).any():
                                 x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / (y[i+1] - y[i])
                                 intersections.append(x_intersect)
                         intersections.sort()
                         for i in range(0, len(intersections), 2):
                             if i+1 < len(intersections):
-                                self.laser_ax.plot([intersections[i], intersections[i+1]], [y_line, y_line], color='blue')
+                                start_point = (intersections[i], y_line)
+                                end_point = (intersections[i+1], y_line)
+                                self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='blue')
                                 self.laser_canvas.draw()
                                 self.laser_window.update()
                                 self.laser_window.after(10)  # wait time in milliseconds when the laser is on
-
-                    # Handle holes in the polygon
-                    for interior in polygon.interiors:
-                        x_interior, y_interior = interior.xy
-                        min_y_interior, max_y_interior = min(y_interior), max(y_interior)
-                        y_lines_interior = np.arange(min_y_interior, max_y_interior, line_spacing)
-                        for y_line in y_lines_interior:
-                            intersections_interior = []
-                            for i in range(len(x_interior) - 1):
-                                if (y_interior[i] <= y_line <= y_interior[i+1]) or (y_interior[i+1] <= y_line <= y_interior[i]):
-                                    x_intersect = x_interior[i] + (y_line - y_interior[i]) * (x_interior[i+1] - x_interior[i]) / (y_interior[i+1] - y_interior[i])
-                                    intersections_interior.append(x_intersect)
-                            intersections_interior.sort()
-                            for i in range(0, len(intersections_interior), 2):
-                                if i+1 < len(intersections_interior):
-                                    self.laser_ax.plot([intersections_interior[i], intersections_interior[i+1]], [y_line, y_line], color='white')
-                                    self.laser_canvas.draw()
-                                    self.laser_window.update()
-                                    self.laser_window.after(10)  # wait time in milliseconds when the laser is on
 
             self.laser_ax.set_title(f"Layer {layer_index}")
             self.laser_canvas.draw()
