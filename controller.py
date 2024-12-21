@@ -39,3 +39,11 @@ class PriorController:
             return buffer.value.decode('utf-8')
         else:
             raise RuntimeError("Failed to send command")
+    
+    def list_ports(self):
+        buffer = create_string_buffer(256)
+        result = self.dll.ListPorts(buffer)
+        if result == 0:
+            return buffer.value.decode('utf-8').split(',')
+        else:
+            raise RuntimeError("Failed to list ports")

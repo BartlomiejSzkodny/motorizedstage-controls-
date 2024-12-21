@@ -4,6 +4,7 @@ import trimesh
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import serial.tools.list_ports
 
 class STLApp:
     def __init__(self, root):
@@ -11,6 +12,7 @@ class STLApp:
         self.root.title("3D STL Slicer")
         self.mesh = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.sections = []
 
         # File Selection
         self.file_label = tk.Label(root, text="No file selected", width=50)
@@ -38,15 +40,21 @@ class STLApp:
         # Layer Selection
         tk.Label(root, text="Select Layer:").grid(row=4, column=0, padx=10, pady=10)
         self.layer_listbox = tk.Listbox(root, height=10)
-        self.layer_listbox.grid(row=4, column=1, padx=10, pady=10)
+        self.layer_listbox.grid(row=5, column=0, padx=10, pady=10)
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
-        #laser start button
+        # Select Ports
+        tk.Label(root, text="Select Ports:").grid(row=4, column=1, padx=10, pady=10)
+        self.select_ports_button = tk.Listbox(root, height=10)
+        self.select_ports_button.grid(row=5, column=1, padx=10, pady=10)
+
+        # Laser start button
         self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
-        self.laser_start_button.grid(row=5, column=0, columnspan=2, pady=10)
+        self.laser_start_button.grid(row=6, column=0, columnspan=2, pady=10)
 
-
-        
+        # Refresh ports button
+        self.refresh_ports_button = tk.Button(root, text="Refresh Ports", command=self.refresh_ports)
+        self.refresh_ports_button.grid(row=7, column=0, columnspan=2, pady=10)
 
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("STL Files", "*.stl")])
@@ -89,23 +97,23 @@ class STLApp:
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
-            section = self.sections[index]
-            self.ax.clear()
-            if section is not None:
-                polygons = section.polygons_full
-                for polygon in polygons:
-                    x, y = polygon.exterior.xy
-                    self.ax.plot(x, y)
-                self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
-            else:
-                self.ax.set_title(f"Layer {index}: No intersection")
+            if index < len(self.sections):
+                section = self.sections[index]
+                self.ax.clear()
+                if section is not None:
+                    polygons = section.polygons_full
+                    for polygon in polygons:
+                        x, y = polygon.exterior.xy
+                        self.ax.plot(x, y)
+                    self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
+                else:
+                    self.ax.set_title(f"Layer {index}: No intersection")
 
-            
-            if selection[0] == 0:
-                x, y = section.polygons_full[0].exterior.xy
-                self.ax.plot(x[0], y[0], 'ro') 
-            
-            self.canvas.draw()
+                if index == 0 and section is not None:
+                    x, y = section.polygons_full[0].exterior.xy
+                    self.ax.plot(x[0], y[0], 'ro') 
+                
+                self.canvas.draw()
         
     def on_closing(self):
         self.canvas.draw()
@@ -113,29 +121,70 @@ class STLApp:
         self.root.destroy()
     
     def start_laser(self):
-        #laser start window
-        laser_window = tk.Toplevel(self.root)
-        laser_window.title("Laser Trajectory")
+        if not self.sections:
+            messagebox.showerror("Error", "No layers to process!")
+            return
 
-        # Create a new figure for the laser trajectory
-        laser_figure, laser_ax = plt.subplots()
-        laser_canvas = FigureCanvasTkAgg(laser_figure, master=laser_window)
-        laser_canvas.get_tk_widget().pack()
+        self.laser_window = tk.Toplevel(self.root)
+        self.laser_window.title("Laser Simulation")
+        self.laser_figure, self.laser_ax = plt.subplots()
+        self.laser_canvas = FigureCanvasTkAgg(self.laser_figure, master=self.laser_window)
+        self.laser_canvas.get_tk_widget().pack()
+        self.laser_window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # Plot the trajectory of the laser
-        selection = self.layer_listbox.curselection()
-        if selection:
-            index = selection[0]
-            section = self.sections[index]
+        self.process_layers()
+
+        drawingPolygon = False
+        for layer_index, section in enumerate(self.sections):
+            self.laser_ax.clear()
             if section is not None:
                 polygons = section.polygons_full
                 for polygon in polygons:
                     x, y = polygon.exterior.xy
-                    laser_ax.plot(x, y)
-                laser_ax.set_title(f"Laser Trajectory for Layer {index}")
-            else:
-                laser_ax.set_title(f"Layer {index}: No intersection")
+                    self.laser_ax.plot(x, y, color='blue')
+                    for point_index in range(len(x)):
+                        self.laser_ax.plot(x[point_index], y[point_index], 'ro', markersize=2)
+                        self.laser_canvas.draw()
+                        self.laser_window.update()
+                        self.laser_window.after(10)  # wait time in milliseconds when the laser is on
+                    drawingPolygon = False
 
-        laser_canvas.draw()
+            self.laser_ax.set_title(f"Layer {layer_index}")
+            self.laser_canvas.draw()
+            self.laser_window.update()
+            self.laser_window.after(500)  # wait time before moving to the next layer
 
-        
+    def process_layers(self):
+            drawingPolygon = False
+            for layer_index, section in enumerate(self.sections):
+                self.laser_ax.clear()
+                if section is not None:
+                    polygons = section.polygons_full
+                    for polygon in polygons:
+                        x, y = polygon.exterior.xy
+                        self.laser_ax.plot(x, y, color='blue')
+                        drawingPolygon = True
+                        for point_index in range(len(x)):
+                                self.laser_ax.plot(x[point_index], y[point_index], 'ro', markersize=2)
+                                self.laser_canvas.draw()
+                                self.laser_window.update()
+                                self.laser_window.after(1)  # wait time in milliseconds when the laser is on
+                                
+                        drawingPolygon = False
+
+
+                self.laser_ax.set_title(f"Layer {layer_index}")
+                self.laser_canvas.draw()
+                self.laser_window.update()
+                self.laser_window.after(500)  # wait time before moving to the next layer
+
+    def refresh_ports(self):
+        ports = [port.device for port in serial.tools.list_ports.comports()]
+        self.select_ports_button.delete(0, tk.END)
+        for port in ports:
+            self.select_ports_button.insert(tk.END, port)
+                
+        if not ports:
+            self.select_ports_button.insert(tk.END, "No ports available")
+        else:
+            self.select_ports_button.insert(tk.END, "Select a port")
