@@ -41,6 +41,13 @@ class STLApp:
         self.layer_listbox.grid(row=4, column=1, padx=10, pady=10)
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
+        #laser start button
+        self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
+        self.laser_start_button.grid(row=5, column=0, columnspan=2, pady=10)
+
+
+        
+
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("STL Files", "*.stl")])
         if file_path:
@@ -83,7 +90,6 @@ class STLApp:
         if selection:
             index = selection[0]
             section = self.sections[index]
-
             self.ax.clear()
             if section is not None:
                 polygons = section.polygons_full
@@ -94,9 +100,10 @@ class STLApp:
             else:
                 self.ax.set_title(f"Layer {index}: No intersection")
 
-            #write the labels of the axes, mm cm or m
-            self.ax.set_xlabel('X (mm)')
-            self.ax.set_ylabel('Y (mm)')
+            
+            if selection[0] == 0:
+                x, y = section.polygons_full[0].exterior.xy
+                self.ax.plot(x[0], y[0], 'ro') 
             
             self.canvas.draw()
         
@@ -104,3 +111,31 @@ class STLApp:
         self.canvas.draw()
         self.root.quit()
         self.root.destroy()
+    
+    def start_laser(self):
+        #laser start window
+        laser_window = tk.Toplevel(self.root)
+        laser_window.title("Laser Trajectory")
+
+        # Create a new figure for the laser trajectory
+        laser_figure, laser_ax = plt.subplots()
+        laser_canvas = FigureCanvasTkAgg(laser_figure, master=laser_window)
+        laser_canvas.get_tk_widget().pack()
+
+        # Plot the trajectory of the laser
+        selection = self.layer_listbox.curselection()
+        if selection:
+            index = selection[0]
+            section = self.sections[index]
+            if section is not None:
+                polygons = section.polygons_full
+                for polygon in polygons:
+                    x, y = polygon.exterior.xy
+                    laser_ax.plot(x, y)
+                laser_ax.set_title(f"Laser Trajectory for Layer {index}")
+            else:
+                laser_ax.set_title(f"Layer {index}: No intersection")
+
+        laser_canvas.draw()
+
+        
