@@ -93,9 +93,12 @@ class STLApp:
                 self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
             else:
                 self.ax.set_title(f"Layer {index}: No intersection")
+
+            #write the labels of the axes, mm cm or m
+            self.ax.set_xlabel('X (mm)')
+            self.ax.set_ylabel('Y (mm)')
             
-            # Set the scale to 76.2 by 25.4 mm
-            self.ax.set_xlim(0, 76.2)
+            self.canvas.draw()
         
     def on_closing(self):
         self.canvas.draw()
