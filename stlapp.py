@@ -34,10 +34,10 @@ class STLApp:
         self.layer_entry.grid(row=1, column=1, padx=10, pady=10)
 
         # Line Spacing
-        tk.Label(root, text="Line Spacing (mm):").grid(row=2, column=0, padx=10, pady=10)
+        tk.Label(root, text="Line Spacing (mm):").grid(row=6, column=0, padx=10, pady=10)
         self.line_spacing_var = tk.DoubleVar(value=0.5)
         self.line_spacing_entry = tk.Entry(root, textvariable=self.line_spacing_var, width=10)
-        self.line_spacing_entry.grid(row=2, column=1, padx=10, pady=10)
+        self.line_spacing_entry.grid(row=6, column=1, padx=10, pady=10)
 
         # Slice Button
         self.slice_button = tk.Button(root, text="Slice STL", command=self.slice_stl)
@@ -50,27 +50,34 @@ class STLApp:
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.output_frame)
         self.canvas.get_tk_widget().pack()
 
-        # Layer Selection
-        tk.Label(root, text="Select Layer:").grid(row=0, column=2, padx=10, pady=10)
+        
+        # Adjust padding for Layer Selection
+        tk.Label(root, text="Select Layer:").grid(row=3, column=2, sticky='n')
         self.layer_listbox = tk.Listbox(root, height=10)
-        self.layer_listbox.grid(row=1, column=2, rowspan=6, padx=10, pady=10)
+        self.layer_listbox.grid(row=4, column=2, rowspan=6, sticky='n')
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
-        
-
-        # Select Ports
-        tk.Label(root, text="Select Ports:").grid(row=0, column=3, padx=10, pady=10)
+        # Adjust padding for Select Ports
+        tk.Label(root, text="Select Ports:").grid(row=3, column=3, sticky='n')
         self.select_ports_button = tk.Listbox(root, height=10)
-        self.select_ports_button.grid(row=1, column=3, rowspan=6, padx=10, pady=10)
+        self.select_ports_button.grid(row=4, column=3, rowspan=6, sticky='n')
         self.select_ports_button.bind('<<ListboxSelect>>', self.connectPrior)
-
-        # Laser start button
-        self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
-        self.laser_start_button.grid(row=7, column=0, columnspan=2, pady=10)
 
         # Refresh ports button
         self.refresh_ports_button = tk.Button(root, text="Refresh Ports", command=self.refresh_ports)
-        self.refresh_ports_button.grid(row=7, column=2, columnspan=2, pady=10)
+        self.refresh_ports_button.grid(row=5, column=2,columnspan=2, sticky='n')
+
+        # Laser start button
+        self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
+        self.laser_start_button.grid(row=8, column=0, columnspan=2, pady=10)
+
+        #go in the rectangle to show the max and min x and y
+        self.show_max_min_button = tk.Button(root, text="Show Max and Min", command=self.show_max_min)
+        self.show_max_min_button.grid(row=7, column=0, columnspan=2, pady=10)
+
+        
+
+        
 
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("STL Files", "*.stl")])
@@ -154,21 +161,36 @@ class STLApp:
 
         
     def process_layers(self):
-        
         line_spacing = self.line_spacing_var.get()
+        
+        # Calculate the bounds for all layers
+        all_x, all_y = [], []
+        for section in self.sections:
+            if section is not None:
+                for polygon in section.polygons_full:
+                    x, y = polygon.exterior.xy
+                    all_x.extend(x)
+                    all_y.extend(y)
+        
+        if not all_x or not all_y:
+            messagebox.showerror("Error", "No valid layers to process!")
+            return
+        
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        
         for layer_index, section in enumerate(self.sections):
+            
             self.laser_ax.clear()
             if section is not None:
                 polygons = section.polygons_full
                 for polygon in polygons:
-                    print(polygon.interiors)
                     x, y = polygon.exterior.xy
-                    min_y, max_y = min(y), max(y)
                     y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
                     for y_line in y_lines:
                         intersections = []
                         for i in range(len(x) - 1):
-                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]).any():
+                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
                                 x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / (y[i+1] - y[i])
                                 intersections.append(x_intersect)
                         intersections.sort()
@@ -176,18 +198,20 @@ class STLApp:
                             if i+1 < len(intersections):
                                 start_point = (intersections[i], y_line)
                                 end_point = (intersections[i+1], y_line)
-                                self.prior.move_to_position(self.x+start_point[0], self.y+start_point[1])
-                                self.prior.start_laser()
-                                self.prior.move_to_position(self.x+end_point[0], self.y+end_point[1])
-                                while self.prior.is_moving():
-                                    time.sleep(0.1)
-                                self.prior.stop_laser()
-                                self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='blue')
+                                self.prior.move_to_position(self.prior, self.x + start_point[0], self.y + start_point[1])
+                                self.prior.start_laser(self.prior)
+                                self.prior.move_to_position(self.prior, self.x + end_point[0], self.y + end_point[1])
+                                self.prior.stop_laser(self.prior)
+                                self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='red')
+                                self.laser_ax.set_title(f"Layer {layer_index}")
+                                self.laser_ax.set_xlim(min_x, max_x)
+                                self.laser_ax.set_ylim(min_y, max_y)
                                 self.laser_canvas.draw()
                                 self.laser_window.update()
                                 self.laser_window.after(10)  # wait time in milliseconds when the laser is on
 
-            self.laser_ax.set_title(f"Layer {layer_index}")
+            
+            
             self.laser_canvas.draw()
             self.laser_window.update()
             self.laser_window.after(500)  # wait time before moving to the next layer
@@ -212,3 +236,33 @@ class STLApp:
             messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
+
+    def show_max_min(self):
+        if not self.sections:
+            messagebox.showerror("Error", "No layers to process!")
+            return
+
+        # Calculate the bounds for all layers
+        all_x, all_y = [], []
+        for section in self.sections:
+            if section is not None:
+                for polygon in section.polygons_full:
+                    x, y = polygon.exterior.xy
+                    all_x.extend(x)
+                    all_y.extend(y)
+        
+        if not all_x or not all_y:
+            messagebox.showerror("Error", "No valid layers to process!")
+            return
+        
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+
+        print(f"Max X: {max_x}, Min X: {min_x}")
+        print(f"Max Y: {max_y}, Min Y: {min_y}")
+
+        prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
+        prior.move_to_position(self.prior, self.x + max_x, self.y + min_y)
+        prior.move_to_position(self.prior, self.x + max_x, self.y + max_y)
+        prior.move_to_position(self.prior, self.x + min_x, self.y + max_y)
+        prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
