@@ -16,6 +16,7 @@ class STLApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.sections = []
         self.prior = prior
+        self.padding = 0.5  # Padding for the laser 
 
         #start x,y position
         self.x = 0
@@ -69,16 +70,16 @@ class STLApp:
 
         # Laser start button
         self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
-        self.laser_start_button.grid(row=8, column=0, columnspan=2, pady=10)
+        self.laser_start_button.grid(row=9, column=0, columnspan=2, pady=10)
 
-        #go in the rectangle to show the max and min x and y
+        # Go in the rectangle to show the max and min x and y
         self.show_max_min_button = tk.Button(root, text="Show Max and Min", command=self.show_max_min)
         self.show_max_min_button.grid(row=7, column=0, columnspan=2, pady=10)
 
-        #set the x and y start position
-        self.xy_entry = tk.Entry(root, text="set X,Y starting", command=self.set_xy)
-        self.xy_entry.grid(row=8, column=2, columnspan=2, pady=10)
-        
+        # Set the x and y start position
+        self.xy_entry = tk.Button(root, text="Set X,Y Starting", command=self.set_xy)
+        self.xy_entry.grid(row=8, column=0, columnspan=2, pady=10)
+
 
         
 
@@ -192,6 +193,7 @@ class STLApp:
                 for polygon in polygons:
                     x, y = polygon.exterior.xy
                     y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
+                    
                     for y_line in y_lines:
                         intersections = []
                         for i in range(len(x) - 1):
@@ -209,8 +211,8 @@ class STLApp:
                                 self.prior.stop_laser(self.prior)
                                 self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='red')
                                 self.laser_ax.set_title(f"Layer {layer_index}")
-                                self.laser_ax.set_xlim(min_x, max_x)
-                                self.laser_ax.set_ylim(min_y, max_y)
+                                self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
+                                self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
                                 self.laser_canvas.draw()
                                 self.laser_window.update()
                                 self.laser_window.after(10)  # wait time in milliseconds when the laser is on
@@ -271,3 +273,6 @@ class STLApp:
         prior.move_to_position(self.prior, self.x + max_x, self.y + max_y)
         prior.move_to_position(self.prior, self.x + min_x, self.y + max_y)
         prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
+    
+    def set_xy(self):
+        pass
