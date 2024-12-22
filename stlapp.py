@@ -75,6 +75,11 @@ class STLApp:
         self.show_max_min_button = tk.Button(root, text="Show Max and Min", command=self.show_max_min)
         self.show_max_min_button.grid(row=7, column=0, columnspan=2, pady=10)
 
+        #set the x and y start position
+        self.xy_entry = tk.Entry(root, text="set X,Y starting", command=self.set_xy)
+        self.xy_entry.grid(row=8, column=2, columnspan=2, pady=10)
+        
+
         
 
         
