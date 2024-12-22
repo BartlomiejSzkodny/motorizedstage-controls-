@@ -14,12 +14,12 @@ class STLApp:
         self.root.title("3D STL Slicer")
         self.mesh = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.laser_ax.protocol("WM_DELETE_WINDOW", self.on_closing_laser)
         self.sections = []
         self.prior = prior
         self.padding = 0.5  # Padding for the laser 
-
-        #start x,y position
+        self.laser_running = False
+    
+            #start x,y position
         self.x = 0
         self.y = 0
 
@@ -146,83 +146,89 @@ class STLApp:
                 self.canvas.draw()
         
     def on_closing(self):
-        self.root.destroy()
+        self.root.quit()
+        
 
-    
     def on_closing_laser(self):
-        self.laser_window.destroy()
-
+            self.laser_running = False
+            self.laser_window.destroy()
     def start_laser(self):
-        if not self.sections:
-            messagebox.showerror("Error", "No layers to process!")
-            return
+            if not self.sections:
+                messagebox.showerror("Error", "No layers to process!")
+                return
+    
+            self.laser_running = True
+            self.laser_window = tk.Toplevel(self.root)
+            self.laser_window.title("Laser Simulation")
+            self.laser_figure, self.laser_ax = plt.subplots()
+            self.laser_canvas = FigureCanvasTkAgg(self.laser_figure, master=self.laser_window)
+            self.laser_canvas.get_tk_widget().pack()
+            self.laser_window.protocol("WM_DELETE_WINDOW", self.on_closing_laser)
+    
+            self.process_layers()
 
-        self.laser_window = tk.Toplevel(self.root)
-        self.laser_window.title("Laser Simulation")
-        self.laser_figure, self.laser_ax = plt.subplots()
-        self.laser_canvas = FigureCanvasTkAgg(self.laser_figure, master=self.laser_window)
-        self.laser_canvas.get_tk_widget().pack()
-        self.laser_window.protocol("WM_DELETE_WINDOW", self.on_closing_laser)
-
-        self.process_layers()
-
-        
     def process_layers(self):
-        line_spacing = self.line_spacing_var.get()
-        
-        # Calculate the bounds for all layers
-        all_x, all_y = [], []
-        for section in self.sections:
-            if section is not None:
-                for polygon in section.polygons_full:
-                    x, y = polygon.exterior.xy
-                    all_x.extend(x)
-                    all_y.extend(y)
-        
-        if not all_x or not all_y:
-            messagebox.showerror("Error", "No valid layers to process!")
-            return
-        
-        min_x, max_x = min(all_x), max(all_x)
-        min_y, max_y = min(all_y), max(all_y)
-        
-        for layer_index, section in enumerate(self.sections):
+            line_spacing = self.line_spacing_var.get()
             
-            self.laser_ax.clear()
-            if section is not None:
-                polygons = section.polygons_full
-                for polygon in polygons:
-                    x, y = polygon.exterior.xy
-                    y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
-                    
-                    for y_line in y_lines:
-                        intersections = []
-                        for i in range(len(x) - 1):
-                            dy = y[i+1] - y[i]
-                            if abs(dy) < 1e-9:
-                                continue
-                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
-                                x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
-                                intersections.append(x_intersect)
-                        intersections.sort()
-                        for i in range(0, len(intersections), 2):
-                            if i+1 < len(intersections):
-                                start_point = (intersections[i], y_line)
-                                end_point = (intersections[i+1], y_line)
-                                self.prior.move_to_position(self.prior, self.x + start_point[0], self.y + start_point[1])
-                                self.prior.start_laser(self.prior)
-                                self.prior.move_to_position(self.prior, self.x + end_point[0], self.y + end_point[1])
-                                self.prior.stop_laser(self.prior)
-                                self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='red')
-                                self.laser_ax.set_title(f"Layer {layer_index}")
-                                self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
-                                self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
-                                self.laser_canvas.draw()
-                                self.laser_window.update()
-                                self.laser_window.after(10)  # wait time in milliseconds when the laser is on
-
+            # Calculate the bounds for all layers
+            all_x, all_y = [], []
+            for section in self.sections:
+                if section is not None:
+                    for polygon in section.polygons_full:
+                        x, y = polygon.exterior.xy
+                        all_x.extend(x)
+                        all_y.extend(y)
             
+            if not all_x or not all_y:
+                messagebox.showerror("Error", "No valid layers to process!")
+                return
             
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            
+            for layer_index, section in enumerate(self.sections):
+                if not self.laser_running:
+                    break
+                
+                self.laser_ax.clear()
+                if section is not None and self.laser_running:
+                    polygons = section.polygons_full
+                    for polygon in polygons:
+                        x, y = polygon.exterior.xy
+                        y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
+                        if not self.laser_running:
+                            break
+                        for y_line in y_lines:
+                            intersections = []
+                            for i in range(len(x) - 1):
+                                dy = y[i+1] - y[i]
+                                if abs(dy) < 1e-9:
+                                    continue
+                                if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
+                                    x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
+                                    intersections.append(x_intersect)
+                            intersections.sort()
+                            for i in range(0, len(intersections), 2):
+                                if i+1 < len(intersections):
+                                    start_point = (intersections[i], y_line)
+                                    end_point = (intersections[i+1], y_line)
+                                    self.prior.move_to_position(self.prior, self.x + start_point[0], self.y + start_point[1])
+                                    self.prior.start_laser(self.prior)
+                                    self.prior.move_to_position(self.prior, self.x + end_point[0], self.y + end_point[1])
+                                    self.prior.stop_laser(self.prior)
+                                    self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='red')
+                                    self.laser_ax.set_title(f"Layer {layer_index}")
+                                    self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
+                                    self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
+                                    try:
+                                        self.laser_canvas.draw()
+                                        self.laser_window.update()
+                                    except tk.TclError:
+                                        return
+                                    self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
+                                    if not self.laser_running:
+                                        break
+                self.laser_window.after(500)  # wait time before moving to the next layer
             self.laser_canvas.draw()
             self.laser_window.update()
             self.laser_window.after(500)  # wait time before moving to the next layer
