@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import serial.tools.list_ports
 from controller import PriorController as prior
-import time
+# import time
 
 class STLApp:
     def __init__(self, root):
@@ -14,6 +14,7 @@ class STLApp:
         self.root.title("3D STL Slicer")
         self.mesh = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.laser_ax.protocol("WM_DELETE_WINDOW", self.on_closing_laser)
         self.sections = []
         self.prior = prior
         self.padding = 0.5  # Padding for the laser 
@@ -145,8 +146,8 @@ class STLApp:
                 self.canvas.draw()
         
     def on_closing(self):
-        self.root.quit()
         self.root.destroy()
+
     
     def on_closing_laser(self):
         self.laser_window.destroy()
@@ -197,8 +198,11 @@ class STLApp:
                     for y_line in y_lines:
                         intersections = []
                         for i in range(len(x) - 1):
+                            dy = y[i+1] - y[i]
+                            if abs(dy) < 1e-9:
+                                continue
                             if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
-                                x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / (y[i+1] - y[i])
+                                x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
                                 intersections.append(x_intersect)
                         intersections.sort()
                         for i in range(0, len(intersections), 2):
