@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import serial.tools.list_ports
+from controller import PriorController as prior
+import time
 
 class STLApp:
     def __init__(self, root):
@@ -13,6 +15,11 @@ class STLApp:
         self.mesh = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.sections = []
+        self.prior = prior
+
+        #start x,y position
+        self.x = 0
+        self.y = 0
 
         # File Selection
         self.file_label = tk.Label(root, text="No file selected", width=50)
@@ -49,10 +56,13 @@ class STLApp:
         self.layer_listbox.grid(row=1, column=2, rowspan=6, padx=10, pady=10)
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
+        
+
         # Select Ports
         tk.Label(root, text="Select Ports:").grid(row=0, column=3, padx=10, pady=10)
         self.select_ports_button = tk.Listbox(root, height=10)
         self.select_ports_button.grid(row=1, column=3, rowspan=6, padx=10, pady=10)
+        self.select_ports_button.bind('<<ListboxSelect>>', self.connectPrior)
 
         # Laser start button
         self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
@@ -166,6 +176,12 @@ class STLApp:
                             if i+1 < len(intersections):
                                 start_point = (intersections[i], y_line)
                                 end_point = (intersections[i+1], y_line)
+                                self.prior.move_to_position(self.x+start_point[0], self.y+start_point[1])
+                                self.prior.start_laser()
+                                self.prior.move_to_position(self.x+end_point[0], self.y+end_point[1])
+                                while self.prior.is_moving():
+                                    time.sleep(0.1)
+                                self.prior.stop_laser()
                                 self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='blue')
                                 self.laser_canvas.draw()
                                 self.laser_window.update()
@@ -186,3 +202,13 @@ class STLApp:
             self.select_ports_button.insert(tk.END, "No ports available")
         else:
             self.select_ports_button.insert(tk.END, "Select a port")
+        
+
+
+    def connectPrior(self,event):
+        port = event.widget.get(event.widget.curselection())[-1]
+        try:
+            self.prior.connect(self.prior, port=port)
+            messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
