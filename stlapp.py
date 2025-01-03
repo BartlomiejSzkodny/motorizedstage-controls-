@@ -59,10 +59,14 @@ class STLApp:
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
         # Adjust padding for Select Ports
-        tk.Label(root, text="Select Ports:").grid(row=3, column=3, sticky='n')
+        tk.Label(root, text="Select Ports:").grid(row=3, column=4, sticky='n')
         self.select_ports_button = tk.Listbox(root, height=10)
-        self.select_ports_button.grid(row=4, column=3, rowspan=6, sticky='n')
+        self.select_ports_button.grid(row=4, column=4, rowspan=6, sticky='n')
         self.select_ports_button.bind('<<ListboxSelect>>', self.connectPrior)
+        # Layer Selection for Processing
+        tk.Label(root, text="Select Layers for Processing:").grid(row=3, column=3, sticky='n')
+        self.layer_selection_listbox = tk.Listbox(root, selectmode=tk.EXTENDED, height=10)
+        self.layer_selection_listbox.grid(row=4, column=3, rowspan=6, sticky='n')
 
         # Refresh ports button
         self.refresh_ports_button = tk.Button(root, text="Refresh Ports", command=self.refresh_ports)
@@ -80,10 +84,7 @@ class STLApp:
         self.xy_entry = tk.Button(root, text="Set X,Y Starting", command=self.set_xy)
         self.xy_entry.grid(row=8, column=0, columnspan=2, pady=10)
 
-        # Layer Selection for Processing
-        tk.Label(root, text="Select Layers for Processing:").grid(row=3, column=4, sticky='n')
-        self.layer_selection_listbox = tk.Listbox(root, selectmode=tk.EXTENDED, height=10)  # Change selectmode to EXTENDED
-        self.layer_selection_listbox.grid(row=4, column=4, rowspan=6, sticky='n')
+        
 
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("STL Files", "*.stl")])
