@@ -8,6 +8,13 @@ import serial.tools.list_ports
 from controller import PriorController as prior
 # import time
 
+"""_summary_ = This class is used to create a GUI for slicing 3D STL files and simulating a laser engraving process.
+The user can load an STL file, slice it into layers, select layers for processing, and simulate a laser engraving process
+on the selected layers. The user can also select the line spacing for the laser engraving process and connect to a Prior
+controller to control the laser engraving process. The user can also select the ports for the Prior controller and start
+the laser engraving process. The user can also set the x and y starting position for the laser engraving process.
+
+"""
 class STLApp:
     def __init__(self, root):
         self.root = root
@@ -85,7 +92,9 @@ class STLApp:
         self.xy_entry.grid(row=8, column=0, columnspan=2, pady=10)
 
         
-
+        """_summary_ = This function is used to load an STL file and display a message box if the file is loaded successfully
+        or if there is an error loading the file.
+        """
     def load_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("STL Files", "*.stl")])
         if file_path:
@@ -99,6 +108,8 @@ class STLApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load STL file: {e}")
 
+        """_summary_ = This function is used to slice the loaded STL file into layers based on the user-specified layer thickness.
+        """
     def slice_stl(self):
         if not self.mesh:
             messagebox.showerror("Error", "No STL file loaded!")
@@ -125,6 +136,8 @@ class STLApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to slice STL file: {e}")
 
+        """_summary_ = This function is used to display the selected layer in the output frame.
+        """
     def display_layer(self, event):
         all_x, all_y = [], []
         for section in self.sections:
@@ -159,14 +172,20 @@ class STLApp:
                 self.ax.set_aspect('equal', adjustable='box')
                 
                 self.canvas.draw()
-        
+    
+    """_summary_ = This function is used to close the main window of the application.
+    """
     def on_closing(self):
         self.root.quit()
-        
+
+    """_summary_ = This function is used to close the laser simulation window.
+    """ 
     def on_closing_laser(self):
         self.laser_running = False
         self.laser_window.destroy()
 
+    """_summary_ = This function is used to start the laser engraving process on the selected layers.
+    """
     def start_laser(self):
         if not self.sections:
             messagebox.showerror("Error", "No layers to process!")
@@ -187,6 +206,13 @@ class STLApp:
 
         self.process_layers(selected_layers)
 
+    """_summary_ = This function is used to process the selected layers for the laser engraving process.
+    The laser engraving process is simulated by moving the laser from the start point to the end point of each line
+    intersection with the selected layers.
+
+    Args:
+        selected_layers (list): A list of selected layers for the laser engraving process.
+    """
     def process_layers(self, selected_layers):
         line_spacing = self.line_spacing_var.get()
         
@@ -256,6 +282,8 @@ class STLApp:
         self.laser_window.update()
         self.laser_window.after(500)  # wait time before moving to the next layer
 
+        """_summary_ = This function is used to refresh the ports for the Prior controller.
+        """
     def refresh_ports(self):
         ports = [port.device for port in serial.tools.list_ports.comports()]
         self.select_ports_button.delete(0, tk.END)
@@ -267,6 +295,11 @@ class STLApp:
         else:
             self.select_ports_button.insert(tk.END, "Select a port")
 
+    """_summary_ = This function is used to connect to the Prior controller using the selected port.
+
+    Args:
+        event (tk.Event): The event object that triggered the function call.
+    """
     def connectPrior(self, event):
         port = event.widget.get(event.widget.curselection())[-1]
         try:
@@ -275,6 +308,8 @@ class STLApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
 
+    """_summary_ = This function is used to show the max and min x and y values of the layers.
+    """
     def show_max_min(self):
         if not self.sections:
             messagebox.showerror("Error", "No layers to process!")
@@ -305,5 +340,8 @@ class STLApp:
         prior.move_to_position(self.prior, self.x + min_x, self.y + max_y)
         prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
     
+    """_summary_= This function is used to set the x and y starting position for the laser engraving process.
+    """
+    #TODO: Implement this function, it is to move the laser to the position
     def set_xy(self):
         pass
