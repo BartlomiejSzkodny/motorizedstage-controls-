@@ -3,47 +3,46 @@ from ctypes import create_string_buffer
 import os
 import sys
 class PriorController:
-    def __init__(self, dll_path):
+    def __init__(self):
         path = "PriorScientificSDK.dll"
-
+        #path to the dll
         if os.path.exists(path):
-            SDKPrior = WinDLL(path)
+            self.SDKPrior = WinDLL(path)
         else:
             raise RuntimeError("DLL could not be loaded.")
-
+        #create a buffer to store the response
         rx = create_string_buffer(1000)
         realhw = False
-        ret = SDKPrior.PriorScientificSDK_Initialise()
+        ret = self.SDKPrior.PriorScientificSDK_Initialise()
+        #send the command to the dll to initialise, if it returns 0 then it was successful
         if ret:
             print(f"Error initialising {ret}")
             sys.exit()
         else:
             print(f"Ok initialising {ret}")
 
-
-        ret = SDKPrior.PriorScientificSDK_Version(rx)
+        #get the version of the dll
+        ret = self.SDKPrior.PriorScientificSDK_Version(rx)
         print(f"dll version api ret={ret}, version={rx.value.decode()}")
 
-
-        sessionID = SDKPrior.PriorScientificSDK_OpenNewSession()
-        if sessionID < 0:
+        #get id of the device
+        self.sessionID = self.SDKPrior.PriorScientificSDK_OpenNewSession()
+        if self.sessionID < 0:
             print(f"Error getting sessionID {ret}")
         else:
-            print(f"SessionID = {sessionID}")
+            print(f"SessionID = {self.sessionID}")
 
-
-        ret = SDKPrior.PriorScientificSDK_cmd(
-            sessionID, create_string_buffer(b"dll.apitest 33 goodresponse"), rx
+        #send a command to the dll, the response will be stored in the rx buffer
+        ret = self.SDKPrior.PriorScientificSDK_cmd(
+            self.sessionID, create_string_buffer(b"dll.apitest 33 goodresponse"), rx
         )
         print(f"api response {ret}, rx = {rx.value.decode()}")
-        input("Press ENTER to continue...")
 
-
-        ret = SDKPrior.PriorScientificSDK_cmd(
-            sessionID, create_string_buffer(b"dll.apitest -300 stillgoodresponse"), rx
+        #send a command to the dll, the response will be stored in the rx buffer
+        ret = self.SDKPrior.PriorScientificSDK_cmd(
+            self.sessionID, create_string_buffer(b"dll.apitest -300 stillgoodresponse"), rx
         )
         print(f"api response {ret}, rx = {rx.value.decode()}")
-        input("Press ENTER to continue...")
 
     def connect(self, port):
         result = self.dll.PriorScientificSDK_cmd(self.sessionID, create_string_buffer(f"COM{port}"), create_string_buffer(256))
@@ -53,12 +52,19 @@ class PriorController:
         else:
             raise ConnectionError("Failed to connect")
         
-    def send_command(self, command):
-        if not self.connected:
-            raise ConnectionError("Not connected")
-        result = self.dll.PriorScientificSDK_cmd(self.sessionID, create_string_buffer(command), create_string_buffer(256))
-        if result != 0:
-            raise RuntimeError("Failed to send command")
+    def cmd(self,msg):
+        rx = create_string_buffer(1000)
+        print(msg)
+        ret = self.SDKPrior.PriorScientificSDK_cmd(
+            self.sessionID, create_string_buffer(msg.encode()), rx
+        )
+        if ret:
+            print(f"Api error {ret}")
+        else:
+            print(f"OK {rx.value.decode()}")
+
+        input("Press ENTER to continue...")
+        return ret, rx.value.decode()
         
         
 
@@ -73,10 +79,13 @@ class PriorController:
         pass #todo
     
     def move_to_position(self, x, y):
-        pass #todo
+        msg = f"controller.stage.goto-position {x} {y}"
+        self.cmd(msg)
+        pass
     
     def get_position(self):
-        pass #todo
+        #print(self.cmd("controller.stage.position.get"))
+        pass
     
     def is_moving(self):
         pass #todo

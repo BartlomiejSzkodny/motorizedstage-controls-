@@ -22,7 +22,8 @@ class STLApp:
         self.mesh = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.sections = []
-        self.prior = prior
+        self.prior_connected = False
+        
         self.padding = 0.5  # Padding for the laser 
         self.laser_running = False
     
@@ -190,6 +191,9 @@ class STLApp:
         if not self.sections:
             messagebox.showerror("Error", "No layers to process!")
             return
+        if not self.prior_connected:
+            messagebox.showerror("Error", "Prior controller not connected!")
+            return
 
         selected_layers = [int(self.layer_selection_listbox.get(i).split()[1]) for i in self.layer_selection_listbox.curselection()]
         if not selected_layers:
@@ -301,9 +305,11 @@ class STLApp:
         event (tk.Event): The event object that triggered the function call.
     """
     def connectPrior(self, event):
+        self.prior = prior
         port = event.widget.get(event.widget.curselection())[-1]
         try:
             self.prior.connect(self.prior, port=port)
+            self.prior_connected = True
             messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
