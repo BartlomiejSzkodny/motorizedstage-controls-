@@ -348,6 +348,10 @@ class STLApp:
     
     """_summary_= This function is used to set the x and y starting position for the laser engraving process.
     """
-    #TODO: Implement this function, it is to move the laser to the position
+    #TODO: Implement this function, it is to move the laser to the position, see how guys did it
     def set_xy(self):
+        position = self.prior.get_position()
+        position = [int(coordinate) for coordinate in position.split(',')]
+        self.x = position[0]
+        self.y = position[1]
         pass
