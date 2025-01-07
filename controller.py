@@ -1,11 +1,12 @@
-#from ctypes import WinDLL,
+from ctypes import WinDLL
 from ctypes import create_string_buffer
 import os
 import sys
 class PriorController:
     def __init__(self):
-        path = "PriorScientificSDK.dll"
+        path = "app/PriorSDK1.9.2/PriorSDK 1.9.2/PriorSDK 1.9.2/x64/PriorScientificSDK.dll"
         #path to the dll
+        print("-------------------------------------")
         if os.path.exists(path):
             self.SDKPrior = WinDLL(path)
         else:
@@ -45,11 +46,12 @@ class PriorController:
         print(f"api response {ret}, rx = {rx.value.decode()}")
 
     def connect(self, port):
-        result = self.dll.PriorScientificSDK_cmd(self.sessionID, create_string_buffer(f"COM{port}"), create_string_buffer(256))
-        if result == 0:
-            self.connected = True
-            print("Connected successfully")
-        else:
+        try:
+            result = self.dll.PriorScientificSDK_cmd(self.sessionID, create_string_buffer(f"COM{port}"), create_string_buffer(256))
+            if result == 0:
+                self.connected = True
+                print("Connected successfully")
+        except:
             raise ConnectionError("Failed to connect")
         
     def cmd(self,msg):

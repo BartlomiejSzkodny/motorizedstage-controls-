@@ -306,6 +306,8 @@ class STLApp:
     """
     def connectPrior(self, event):
         self.prior = prior
+        print("---")
+        self.prior.__init__(self.prior)
         port = event.widget.get(event.widget.curselection())[-1]
         try:
             self.prior.connect(self.prior, port=port)
