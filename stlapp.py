@@ -26,7 +26,6 @@ class STLApp:
         self.prior_connected = False
         
         self.padding = 0.5  # Padding for the laser 
-        self.laser_running = False
     
         # Start x,y position
         self.x = 0
@@ -209,7 +208,6 @@ class STLApp:
     """_summary_ = This function is used to close the laser simulation window.
     """ 
     def on_closing_laser(self):
-        self.laser_running = False
         self.laser_window.destroy()
 
     """_summary_ = This function is used to start the laser engraving process on the selected layers.
@@ -227,7 +225,6 @@ class STLApp:
             messagebox.showerror("Error", "No layers selected for processing!")
             return
 
-        self.laser_running = True
         self.laser_window = tk.Toplevel(self.root)
         self.laser_window.title("Laser Simulation")
         self.laser_figure, self.laser_ax = plt.subplots()
