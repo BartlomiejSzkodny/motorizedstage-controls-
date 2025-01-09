@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import serial.tools.list_ports
 from controller import PriorController as prior
-# import time
+import time
 
 """_summary_ = This class is used to create a GUI for slicing 3D STL files and simulating a laser engraving process.
 The user can load an STL file, slice it into layers, select layers for processing, and simulate a laser engraving process
@@ -19,7 +19,8 @@ class STLApp:
     def __init__(self, root):
         self.root = root
         self.root.title("3D STL Slicer")
-        self.mesh = None
+        self.mesh_oryginal = None
+        self.mesh_copy = None
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.sections = []
         self.prior_connected = False
@@ -52,6 +53,22 @@ class STLApp:
         # Slice Button
         self.slice_button = tk.Button(root, text="Slice STL", command=self.slice_stl)
         self.slice_button.grid(row=3, column=0, columnspan=2, pady=10)
+        # Scale of the layer
+        tk.Label(root, text="Scale of the layer:").grid(row=2, column=2, padx=10, pady=10)
+        self.scale_var = tk.DoubleVar(value=1.0)
+        self.scale_entry = tk.Entry(root, textvariable=self.scale_var, width=10)
+        self.scale_entry.grid(row=2, column=3, padx=10, pady=10)
+
+
+
+
+        #velocity selection
+        tk.Label(root, text="Velocity (um/s):").grid(row=2, column=0, padx=10, pady=10)
+        self.velocity_var = tk.DoubleVar(value=10)
+        self.velocity_entry = tk.Entry(root, textvariable=self.velocity_var, width=10)
+        self.velocity_entry.grid(row=2, column=1, padx=10, pady=10)
+
+
 
         # Output
         self.output_frame = tk.Frame(root)
@@ -101,8 +118,8 @@ class STLApp:
         if file_path:
             self.file_label.config(text=file_path)
             try:
-                self.mesh = trimesh.load(file_path)
-                if self.mesh.is_watertight:
+                self.mesh_oryginal = trimesh.load(file_path)
+                if self.mesh_oryginal.is_watertight:
                     messagebox.showinfo("Success", "STL file loaded successfully!")
                 else:
                     messagebox.showwarning("Warning", "STL file is not watertight!")
@@ -112,16 +129,18 @@ class STLApp:
         """_summary_ = This function is used to slice the loaded STL file into layers based on the user-specified layer thickness.
         """
     def slice_stl(self):
-        if not self.mesh:
+        if not self.mesh_oryginal:
             messagebox.showerror("Error", "No STL file loaded!")
             return
-
+        self.mesh_copy = self.mesh_oryginal
         layer_thickness = self.layer_thickness_var.get()
-        z_min, z_max = self.mesh.bounds[0][2], self.mesh.bounds[1][2]
+        z_min, z_max = self.mesh_copy.bounds[0][2], self.mesh_copy.bounds[1][2]
         z_levels = np.arange(z_min, z_max, layer_thickness)
 
+        
+
         try:
-            self.sections = self.mesh.section_multiplane(
+            self.sections = self.mesh_copy.section_multiplane(
                 plane_origin=[0, 0, 0],
                 plane_normal=[0, 0, 1],
                 heights=z_levels
@@ -141,14 +160,6 @@ class STLApp:
         """
     def display_layer(self, event):
         all_x, all_y = [], []
-        for section in self.sections:
-            if section is not None:
-                for polygon in section.polygons_full:
-                    x, y = polygon.exterior.xy
-                    all_x.extend(x)
-                    all_y.extend(y)
-        min_x, max_x = min(all_x), max(all_x)
-        min_y, max_y = min(all_y), max(all_y)
         
         selection = event.widget.curselection()
         if selection:
@@ -158,8 +169,14 @@ class STLApp:
                 self.ax.clear()
                 if section is not None:
                     polygons = section.polygons_full
+                    scale = self.scale_var.get()
                     for polygon in polygons:
                         x, y = polygon.exterior.xy
+                        x = [coord*scale for coord in x]
+                        y = [coord*scale for coord in y]
+                        all_x.extend(x)
+                        all_y.extend(y)
+
                         self.ax.plot(x, y)
                     self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
                 else:
@@ -168,8 +185,8 @@ class STLApp:
                 if index == 0 and section is not None:
                     x, y = section.polygons_full[0].exterior.xy
                     self.ax.plot(x[0], y[0], 'ro') 
-                self.ax.set_xlim(min_x-self.padding, max_x+self.padding)
-                self.ax.set_ylim(min_y-self.padding, max_y+self.padding)
+                self.ax.set_xlim(min(all_x)-self.padding, max(all_x)+self.padding)
+                self.ax.set_ylim(min(all_y)-self.padding, max(all_y)+self.padding)
                 self.ax.set_aspect('equal', adjustable='box')
                 
                 self.canvas.draw()
@@ -191,9 +208,9 @@ class STLApp:
         if not self.sections:
             messagebox.showerror("Error", "No layers to process!")
             return
-        if not self.prior_connected:
-            messagebox.showerror("Error", "Prior controller not connected!")
-            return
+        # if not self.prior_connected:
+        #     messagebox.showerror("Error", "Prior controller not connected!")
+        #     return
 
         selected_layers = [int(self.layer_selection_listbox.get(i).split()[1]) for i in self.layer_selection_listbox.curselection()]
         if not selected_layers:
@@ -222,10 +239,13 @@ class STLApp:
         
         # Calculate the bounds for all layers
         all_x, all_y = [], []
+        scale = self.scale_var.get()
         for section in self.sections:
             if section is not None:
                 for polygon in section.polygons_full:
                     x, y = polygon.exterior.xy
+                    x = [coord*scale for coord in x]
+                    y = [coord*scale for coord in y]
                     all_x.extend(x)
                     all_y.extend(y)
         
@@ -237,8 +257,6 @@ class STLApp:
         min_y, max_y = min(all_y), max(all_y)
         
         for layer_index in selected_layers:
-            if not self.laser_running:
-                break
             
             section = self.sections[layer_index]
             self.laser_ax.clear()
@@ -247,8 +265,6 @@ class STLApp:
                 for polygon in polygons:
                     x, y = polygon.exterior.xy
                     y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
-                    if not self.laser_running:
-                        break
                     for y_line in y_lines:
                         intersections = []
                         for i in range(len(x) - 1):
@@ -264,11 +280,18 @@ class STLApp:
                                 if i+1 < len(intersections):
                                     start_point = (intersections[i], y_line)
                                     end_point = (intersections[i+1], y_line)
-                                    self.prior.move_to_position(self.prior, self.x + start_point[0], self.y + start_point[1])
-                                    self.prior.start_laser(self.prior)
-                                    self.prior.move_to_position(self.prior, self.x + end_point[0], self.y + end_point[1])
-                                    self.prior.stop_laser(self.prior)
-                                    self.laser_ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='red')
+                                    print(f"Layer {layer_index}: Moving from {start_point*scale} to {end_point*scale}")
+
+                                    # distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
+                                    # self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
+                                    # self.prior.start_laser(self.prior)
+                                    # self.prior.velocitymove(self.prior, self.velocity_var, 0)
+                                    # time.sleep(distance/self.velocity_var)
+                                    # self.prior.velocitymove(self.prior, 0, 0)
+                                    # self.prior.stop_laser(self.prior)
+
+                                    #self.prior.stop_laser(self.prior)
+                                    self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
                                     self.laser_ax.set_title(f"Layer {layer_index}")
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
                                     self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
@@ -307,10 +330,11 @@ class STLApp:
     def connectPrior(self, event):
         self.prior = prior
         print("---")
-        self.prior.__init__(self.prior)
+        self.prior.initialisation(self.prior)
         port = event.widget.get(event.widget.curselection())[-1]
+        self.prior.connect(self.prior, port=port)
         try:
-            self.prior.connect(self.prior, port=port)
+            
             self.prior_connected = True
             messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
         except Exception as e:
@@ -357,3 +381,5 @@ class STLApp:
         self.x = position[0]
         self.y = position[1]
         pass
+
+        

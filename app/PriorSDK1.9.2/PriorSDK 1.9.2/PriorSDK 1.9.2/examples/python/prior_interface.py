@@ -85,7 +85,7 @@ input("Press ENTER to continue...")
 if realhw:
     print("Connecting...")
     # substitute 3 with your com port Id
-    cmd("controller.connect 3")
+    cmd("controller.connect 4")
 
     # test an illegal command
     cmd("controller.stage.position.getx")
