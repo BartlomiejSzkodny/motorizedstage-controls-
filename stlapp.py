@@ -159,14 +159,29 @@ class STLApp:
         """_summary_ = This function is used to display the selected layer in the output frame.
         """
     def display_layer(self, event):
+        print("Displaying layer")
+        self.ax.clear()
         all_x, all_y = [], []
+        scale = self.scale_var.get()
+        self.ax.set_aspect('equal', adjustable='box')
+        for section in self.sections:
+            if section is not None:
+                for polygon in section.polygons_full:
+                    x, y = polygon.exterior.xy
+                    x = [coord*scale for coord in x]
+                    y = [coord*scale for coord in y]
+                    all_x.extend(x)
+                    all_y.extend(y)
+        self.ax.set_xlim(min(all_x)-self.padding, max(all_x)+self.padding)
+        self.ax.set_ylim(min(all_y)-self.padding, max(all_y)+self.padding)
+        
         
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
             if index < len(self.sections):
                 section = self.sections[index]
-                self.ax.clear()
+
                 if section is not None:
                     polygons = section.polygons_full
                     scale = self.scale_var.get()
@@ -174,9 +189,6 @@ class STLApp:
                         x, y = polygon.exterior.xy
                         x = [coord*scale for coord in x]
                         y = [coord*scale for coord in y]
-                        all_x.extend(x)
-                        all_y.extend(y)
-
                         self.ax.plot(x, y)
                     self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
                 else:
@@ -185,9 +197,7 @@ class STLApp:
                 if index == 0 and section is not None:
                     x, y = section.polygons_full[0].exterior.xy
                     self.ax.plot(x[0], y[0], 'ro') 
-                self.ax.set_xlim(min(all_x)-self.padding, max(all_x)+self.padding)
-                self.ax.set_ylim(min(all_y)-self.padding, max(all_y)+self.padding)
-                self.ax.set_aspect('equal', adjustable='box')
+                
                 
                 self.canvas.draw()
     
