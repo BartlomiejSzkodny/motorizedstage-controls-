@@ -189,13 +189,18 @@ class STLApp:
                         x = [coord*scale for coord in x]
                         y = [coord*scale for coord in y]
                         self.ax.plot(x, y)
+                        for interior in polygon.interiors:
+                            ix, iy = interior.xy
+                            ix = [coord*scale for coord in ix]
+                            iy = [coord*scale for coord in iy]
+                            self.ax.plot(ix, iy, 'r--')  # Plot inner boundaries with dashed lines
                     self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
                 else:
                     self.ax.set_title(f"Layer {index}: No intersection")
 
                 if index == 0 and section is not None:
                     x, y = section.polygons_full[0].exterior.xy
-                    self.ax.plot(x[0], y[0], 'ro') 
+                    self.ax.plot(x[0], y[0], 'ro')
                 
                 
                 self.canvas.draw()
@@ -208,6 +213,7 @@ class STLApp:
     """_summary_ = This function is used to close the laser simulation window.
     """ 
     def on_closing_laser(self):
+        self.laser_running = False
         self.laser_window.destroy()
 
     """_summary_ = This function is used to start the laser engraving process on the selected layers.
@@ -262,33 +268,48 @@ class STLApp:
         
         min_x, max_x = min(all_x), max(all_x)
         min_y, max_y = min(all_y), max(all_y)
+        self.laser_running = True
         
         for layer_index in selected_layers:
             
             section = self.sections[layer_index]
             self.laser_ax.clear()
-            if section is not None and self.laser_running:
+            if section is not None:
                 polygons = section.polygons_full
                 for polygon in polygons:
                     x, y = polygon.exterior.xy
                     y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
                     for y_line in y_lines:
-                        intersections = []
-                        for i in range(len(x) - 1):
-                            dy = y[i+1] - y[i]
-                            if abs(dy) < 1e-9:
-                                continue
-                            if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
-                                x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
-                                intersections.append(x_intersect)
-                        intersections.sort()
-                        for i in range(0, len(intersections), 2):
-                            if self.laser_running:
+                        if self.laser_running:
+                            intersections = []
+                            for polygon in polygons:
+                                x, y = polygon.exterior.xy
+                                x = [coord*scale for coord in x]
+                                y = [coord*scale for coord in y]
+
+                                for i in range(len(x) - 1):
+                                    dy = y[i+1] - y[i]
+                                    if abs(dy) < 1e-9:
+                                        continue
+                                    if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
+                                        x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
+                                        intersections.append(x_intersect)
+                                for interior in polygon.interiors:
+                                    ix, iy = interior.xy
+                                    ix = [coord*scale for coord in ix]
+                                    iy = [coord*scale for coord in iy]
+                                    for i in range(len(ix) - 1):
+                                        dy = iy[i+1] - iy[i]
+                                        if abs(dy) < 1e-9:
+                                            continue
+                                        if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
+                                            x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
+                                            intersections.append(x_intersect)
+                            intersections.sort()
+                            for i in range(0, len(intersections), 2):
                                 if i+1 < len(intersections):
                                     start_point = (intersections[i], y_line)
                                     end_point = (intersections[i+1], y_line)
-                                    print(f"Layer {layer_index}: Moving from {start_point*scale} to {end_point*scale}")
-
                                     # distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
                                     # self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
                                     # self.prior.start_laser(self.prior)
@@ -297,7 +318,6 @@ class STLApp:
                                     # self.prior.velocitymove(self.prior, 0, 0)
                                     # self.prior.stop_laser(self.prior)
 
-                                    #self.prior.stop_laser(self.prior)
                                     self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
                                     self.laser_ax.set_title(f"Layer {layer_index}")
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
@@ -309,8 +329,6 @@ class STLApp:
                                     except tk.TclError:
                                         return
                                     self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
-                            else:
-                                break
             self.laser_window.after(500)  # wait time before moving to the next layer
         self.laser_canvas.draw()
         self.laser_window.update()
