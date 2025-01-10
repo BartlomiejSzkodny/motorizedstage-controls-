@@ -272,7 +272,6 @@ class STLApp:
         self.laser_running = True
         
         for layer_index in selected_layers:
-            
             section = self.sections[layer_index]
             self.laser_ax.clear()
             if section is not None:
@@ -307,18 +306,12 @@ class STLApp:
                                             x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
                                             intersections.append(x_intersect)
                             intersections.sort()
+                            if inverse:
+                                intersections = [x for i, x in enumerate(intersections) if i % 2 == 1]
                             for i in range(0, len(intersections), 2):
                                 if i+1 < len(intersections):
                                     start_point = (intersections[i], y_line)
                                     end_point = (intersections[i+1], y_line)
-                                    # distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
-                                    # self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
-                                    # self.prior.start_laser(self.prior)
-                                    # self.prior.velocitymove(self.prior, self.velocity_var, 0)
-                                    # time.sleep(distance/self.velocity_var)
-                                    # self.prior.velocitymove(self.prior, 0, 0)
-                                    # self.prior.stop_laser(self.prior)
-
                                     self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
                                     self.laser_ax.set_title(f"Layer {layer_index}")
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
@@ -330,10 +323,10 @@ class STLApp:
                                     except tk.TclError:
                                         return
                                     self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
+                self.laser_window.after(500)  # wait time before moving to the next layer
+            self.laser_canvas.draw()
+            self.laser_window.update()
             self.laser_window.after(500)  # wait time before moving to the next layer
-        self.laser_canvas.draw()
-        self.laser_window.update()
-        self.laser_window.after(500)  # wait time before moving to the next layer
 
         """_summary_ = This function is used to refresh the ports for the Prior controller.
         """
