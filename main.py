@@ -16,4 +16,6 @@ if __name__ == "__main__":
         print("Invalid input")
         exit(1)
         
+#todo test seting the starting point
+#test ttl
 
