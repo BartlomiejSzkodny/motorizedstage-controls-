@@ -3,40 +3,58 @@ from ctypes import create_string_buffer
 import os
 import sys
 class PriorController:
-    def initialisation(self):
-        path = "app/PriorSDK1.9.2/PriorSDK 1.9.2/PriorSDK 1.9.2/x64/PriorScientificSDK.dll"
+    def __init__(self,port):
+        self.connected =False
+        self.port = -1
+        self.initialisation(port)
 
 
-        if os.path.exists(path):
-            self.SDKPrior = WinDLL(path)
-        else:
-            raise RuntimeError("DLL could not be loaded.")
 
-        rx = create_string_buffer(1000)
+    def initialisation(self,port):
+                path = "app/PriorSDK1.9.2/PriorSDK 1.9.2/PriorSDK 1.9.2/x64/PriorScientificSDK.dll"
+                self.port = port
+                if(not self.connected):
 
-        ret = self.SDKPrior.PriorScientificSDK_Version(rx)
-        print(f"dll version api ret={ret}, version={rx.value.decode()}")
+                    if os.path.exists(path):
+                        self.SDKPrior = WinDLL(path)
+                    else:
+                        raise RuntimeError("DLL could not be loaded.")
 
+                    self.rx = create_string_buffer(1000)
 
-        self.sessionID = self.SDKPrior.PriorScientificSDK_OpenNewSession()
-        if self.sessionID < 0:
-            print(f"Error getting sessionID {ret}")
-        else:
-            print(f"SessionID = {self.sessionID}")
-
-
-        ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.sessionID, create_string_buffer(b"dll.apitest 33 goodresponse"), rx
-        )
-        print(f"api response {ret}, rx = {rx.value.decode()}")
-        input("Press ENTER to continue...")
+                    ret = self.SDKPrior.PriorScientificSDK_Initialise()
+                    if ret:
+                        print(f"Error initialising {ret}")
+                        sys.exit()
+                    else:
+                        print(f"Ok initialising {ret}")
+                        self.connected = True
 
 
-        ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.sessionID, create_string_buffer(b"dll.apitest -300 stillgoodresponse"), rx
-        )
-        print(f"api response {ret}, rx = {rx.value.decode()}")
-        input("Press ENTER to continue...")
+                    ret = self.SDKPrior.PriorScientificSDK_Version(self.rx)
+                    print(f"dll version api ret={ret}, version={self.rx.value.decode()}")
+
+
+                    self.sessionID = self.SDKPrior.PriorScientificSDK_OpenNewSession()
+                    if self.sessionID < 0:
+                        print(f"Error getting sessionID {ret}")
+                    else:
+                        print(f"SessionID = {self.sessionID}")
+
+
+                    ret = self.SDKPrior.PriorScientificSDK_cmd(
+                        self.sessionID, create_string_buffer(b"dll.apitest 33 goodresponse"), self.rx
+                    )
+                    print(f"api response {ret}, rx = {self.rx.value.decode()}")
+
+
+
+                    ret = self.SDKPrior.PriorScientificSDK_cmd(
+                        self.sessionID, create_string_buffer(b"dll.apitest -300 stillgoodresponse"), self.rx
+                    )
+                    print(f"api response {ret}, rx = {self.rx.value.decode()}")
+                    ret =self.cmd(f"controller.connect {port}")
+                    print(f"api response {ret}, rx = {self.rx.value.decode()}")
 
     def cmd(self, msg):
         rx = create_string_buffer(1000)
@@ -50,17 +68,6 @@ class PriorController:
             print(f"OK {rx.value.decode()}")
 
         return ret, rx.value.decode()
-
-
-    def connect(self, port):
-        try:
-            result = self.cmd(self,f"controller.connect 4")
-            #if result == 0:
-            print(f"result---->{result}")
-            self.connected = True
-            print("Connected successfully")
-        except:
-            raise ConnectionError("Failed to connect")  
     
     
     
@@ -80,7 +87,7 @@ class PriorController:
         pass
     
     def get_position(self):
-        return self.cmd(self,"controller.stage.position.get")
+        return self.cmd("controller.stage.position.get")
     
     def is_moving(self):
         pass #todo

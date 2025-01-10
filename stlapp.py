@@ -17,6 +17,7 @@ the laser engraving process. The user can also set the x and y starting position
 """
 class STLApp:
     def __init__(self, root):
+        self.prior = None
         self.root = root
         self.root.title("3D STL Slicer")
         self.mesh_oryginal = None
@@ -249,7 +250,6 @@ class STLApp:
     """
     def process_layers(self, selected_layers):
         line_spacing = self.line_spacing_var.get()
-        inverse = True  # Set this to True to draw lines outside the polygons
         
         # Calculate the bounds for all layers
         all_x, all_y = [], []
@@ -271,6 +271,8 @@ class STLApp:
         min_y, max_y = min(all_y), max(all_y)
         self.laser_running = True
         
+        plot_interiors_only = True  # Add a boolean variable to control plotting
+
         for layer_index in selected_layers:
             section = self.sections[layer_index]
             self.laser_ax.clear()
@@ -282,11 +284,7 @@ class STLApp:
                     for y_line in y_lines:
                         if self.laser_running:
                             intersections = []
-                            for polygon in polygons:
-                                x, y = polygon.exterior.xy
-                                x = [coord*scale for coord in x]
-                                y = [coord*scale for coord in y]
-
+                            if not plot_interiors_only:  # Plot exteriors if the flag is False
                                 for i in range(len(x) - 1):
                                     dy = y[i+1] - y[i]
                                     if abs(dy) < 1e-9:
@@ -294,20 +292,18 @@ class STLApp:
                                     if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
                                         x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
                                         intersections.append(x_intersect)
-                                for interior in polygon.interiors:
-                                    ix, iy = interior.xy
-                                    ix = [coord*scale for coord in ix]
-                                    iy = [coord*scale for coord in iy]
-                                    for i in range(len(ix) - 1):
-                                        dy = iy[i+1] - iy[i]
-                                        if abs(dy) < 1e-9:
-                                            continue
-                                        if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
-                                            x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
-                                            intersections.append(x_intersect)
+                            for interior in polygon.interiors:
+                                ix, iy = interior.xy
+                                ix = [coord*scale for coord in ix]
+                                iy = [coord*scale for coord in iy]
+                                for i in range(len(ix) - 1):
+                                    dy = iy[i+1] - iy[i]
+                                    if abs(dy) < 1e-9:
+                                        continue
+                                    if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
+                                        x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
+                                        intersections.append(x_intersect)
                             intersections.sort()
-                            if inverse:
-                                intersections = [x for i, x in enumerate(intersections) if i % 2 == 1]
                             for i in range(0, len(intersections), 2):
                                 if i+1 < len(intersections):
                                     start_point = (intersections[i], y_line)
@@ -317,16 +313,23 @@ class STLApp:
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
                                     self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
                                     self.laser_ax.set_aspect('equal', adjustable='box')
+                                    distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
+                                    self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
+                                    self.prior.start_laser(self.prior)
+                                    self.prior.velocitymove(self.prior, self.velocity_var, 0)
+                                    time.sleep(distance/self.velocity_var)
+                                    self.prior.velocitymove(self.prior, 0, 0)
+                                    self.prior.stop_laser(self.prior)
                                     try:
                                         self.laser_canvas.draw()
                                         self.laser_window.update()
                                     except tk.TclError:
                                         return
                                     self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
-                self.laser_window.after(500)  # wait time before moving to the next layer
-            self.laser_canvas.draw()
-            self.laser_window.update()
             self.laser_window.after(500)  # wait time before moving to the next layer
+        self.laser_canvas.draw()
+        self.laser_window.update()
+        self.laser_window.after(500)  # wait time before moving to the next layer
 
         """_summary_ = This function is used to refresh the ports for the Prior controller.
         """
@@ -347,17 +350,18 @@ class STLApp:
         event (tk.Event): The event object that triggered the function call.
     """
     def connectPrior(self, event):
-        self.prior = prior
-        print("---")
-        self.prior.initialisation(self.prior)
-        port = event.widget.get(event.widget.curselection())[-1]
-        self.prior.connect(self.prior, port=port)
-        try:
+        if not self.prior_connected:
+            print("---")
             
-            self.prior_connected = True
-            messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
+            port = event.widget.get(event.widget.curselection())[-1]
+            self.prior = prior(port)
+
+            try:
+                
+                self.prior_connected = True
+                messagebox.showinfo("Success", "Connected to Prior Controller successfully!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to connect to Prior Controller: {e}")
 
     """_summary_ = This function is used to show the max and min x and y values of the layers.
     """
@@ -396,7 +400,6 @@ class STLApp:
     #TODO: Implement this function, it is to move the laser to the position, see how guys did it
     def set_xy(self):
         position = self.prior.get_position()
-        position = [int(coordinate) for coordinate in position.split(',')]
         self.x = position[0]
         self.y = position[1]
         pass
