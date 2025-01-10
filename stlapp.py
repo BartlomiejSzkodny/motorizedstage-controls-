@@ -243,6 +243,7 @@ class STLApp:
     """
     def process_layers(self, selected_layers):
         line_spacing = self.line_spacing_var.get()
+        inverse = True  # Set this to True to draw lines outside the polygons
         
         # Calculate the bounds for all layers
         all_x, all_y = [], []
@@ -282,6 +283,8 @@ class STLApp:
                                 x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
                                 intersections.append(x_intersect)
                         intersections.sort()
+                        if inverse:
+                            intersections = [min_x] + intersections + [max_x]
                         for i in range(0, len(intersections), 2):
                             if self.laser_running:
                                 if i+1 < len(intersections):
@@ -289,15 +292,6 @@ class STLApp:
                                     end_point = (intersections[i+1], y_line)
                                     print(f"Layer {layer_index}: Moving from {start_point*scale} to {end_point*scale}")
 
-                                    # distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
-                                    # self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
-                                    # self.prior.start_laser(self.prior)
-                                    # self.prior.velocitymove(self.prior, self.velocity_var, 0)
-                                    # time.sleep(distance/self.velocity_var)
-                                    # self.prior.velocitymove(self.prior, 0, 0)
-                                    # self.prior.stop_laser(self.prior)
-
-                                    #self.prior.stop_laser(self.prior)
                                     self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
                                     self.laser_ax.set_title(f"Layer {layer_index}")
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
