@@ -19,4 +19,6 @@ if __name__ == "__main__":
 #todo test seting the starting point
 #test ttl
 #if it will be posible run weronikas stl file
+#add inversion
+#skalowanie nie działa
 

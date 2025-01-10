@@ -12,7 +12,10 @@ class debug:
                         print("move - Move to a specified position")
                         print("get - Get the current position")
                         print("connect - Connect to the stage")
+                        print("test - Test the stage")
+                        print("ttl - Set the ttl")
                         print("exit - Exit the program")
+                        
                     elif command == "move":
                         coordinates = input("Enter coordinates (x,y): ").split(",")
                         self.move(coordinates)
@@ -26,6 +29,10 @@ class debug:
                     elif command == "vmove":
                         velocity = input("Enter velocity(x,y): ").split(",")
                         self.move_at_velocity(velocity[0],velocity[1])
+                    elif command == "ttl":
+                        num = input("Enter 15 to 0: ")
+                        self.cmd(f"controller.ttl.out.set {num}")
+                        
                     elif command == "test":
                         self.cmd(f"controller.stage.move-at-velocity 100 100")
                         time.sleep(20)
