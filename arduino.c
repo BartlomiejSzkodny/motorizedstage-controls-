@@ -3,8 +3,13 @@ int pwmPin = 9; // PWM pin connected to analog 0
 
 void setup() {
     pinMode(pwmPin, OUTPUT);
+    pinMode(13, INPUT);
 }
 
 void loop() {
-    analogWrite(pwmPin, 128); // Set PWM to 50% duty cycle
+    if (digitalRead(13) == HIGH) {
+        analogWrite(pwmPin, 255); // Set PWM to 100% duty cycle
+    } else {
+    analogWrite(pwmPin, 0); // Set PWM to 50% duty cycle
+    }
 }

@@ -65,10 +65,10 @@ class PriorController:
     
     
     def start_laser(self):
-        pass #todo
+        self.cmd(self,"controller.ttl.out.set 1")#TODO check ttl
     
     def stop_laser(self):
-        pass #todo
+        self.cmd(self,"controller.ttl.out.set 0")
 
     def velocitymove(self, x, y):
         msg = f"controller.stage.move-at-velocity {x} {y}"
@@ -80,8 +80,7 @@ class PriorController:
         pass
     
     def get_position(self):
-        self.cmd(self,"controller.stage.position.get")
-        pass
+        return self.cmd(self,"controller.stage.position.get")
     
     def is_moving(self):
         pass #todo
