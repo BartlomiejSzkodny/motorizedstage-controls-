@@ -250,6 +250,7 @@ class STLApp:
     """
     def process_layers(self, selected_layers):
         line_spacing = self.line_spacing_var.get()
+        speed = self.velocity_var.get()
         
         # Calculate the bounds for all layers
         all_x, all_y = [], []
@@ -313,13 +314,19 @@ class STLApp:
                                     self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
                                     self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
                                     self.laser_ax.set_aspect('equal', adjustable='box')
-                                    distance = np.sqrt((end_point[0]*scale - start_point[0]*scale)**2 + (end_point[1]*scale - start_point[1]*scale)**2)
-                                    self.prior.move_to_position(self.prior, self.x + start_point[0]*scale, self.y + start_point[1]*scale)
-                                    self.prior.start_laser(self.prior)
-                                    self.prior.velocitymove(self.prior, self.velocity_var, 0)
-                                    time.sleep(distance/self.velocity_var)
-                                    self.prior.velocitymove(self.prior, 0, 0)
-                                    self.prior.stop_laser(self.prior)
+                                    current =self.prior.get_position()[1].split(',')
+                                    print(current)
+                                    distance = (abs((int(current[0]))-abs(start_point[0]*scale))**2+(abs(int(current[1]))-abs(start_point[1]*scale))**2)**0.5
+                                    self.prior.move_to_position(self.x + start_point[0]*scale, self.y + start_point[1]*scale)
+                                    print(type(speed))
+                                    print(type(distance))
+                                    print(distance/(speed*1000))
+                                    time.sleep(distance/(speed*1000))
+                                    distance = ((abs(end_point[0])*scale)-abs(start_point[0]*scale))**2+(abs(end_point[1]*scale)-abs(start_point[1]*scale)**2)**0.5
+                                    #self.prior.start_laser(self.prior)
+                                    self.prior.move_to_position(self.x+end_point[0]*scale,self.y+end_point[1]*scale)
+                                    time.sleep(distance/(speed*1000))
+                                    #self.prior.stop_laser(self.prior)
                                     try:
                                         self.laser_canvas.draw()
                                         self.laser_window.update()
@@ -388,8 +395,9 @@ class STLApp:
 
         print(f"Max X: {max_x}, Min X: {min_x}")
         print(f"Max Y: {max_y}, Min Y: {min_y}")
-
+        print(type(self.x+min_x))
         prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
+
         prior.move_to_position(self.prior, self.x + max_x, self.y + min_y)
         prior.move_to_position(self.prior, self.x + max_x, self.y + max_y)
         prior.move_to_position(self.prior, self.x + min_x, self.y + max_y)
@@ -399,9 +407,10 @@ class STLApp:
     """
     #TODO: Implement this function, it is to move the laser to the position, see how guys did it
     def set_xy(self):
-        position = self.prior.get_position()
-        self.x = position[0]
-        self.y = position[1]
+        position = self.prior.get_position()[1].split(',')
+        print(position)
+        self.x = int(position[0])
+        self.y = int(position[1])
         pass
 
         

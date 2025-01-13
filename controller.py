@@ -79,15 +79,19 @@ class PriorController:
 
     def velocitymove(self, x, y):
         msg = f"controller.stage.move-at-velocity {x} {y}"
-        self.cmd(self, msg)
+        self.cmd(msg)
     
     def move_to_position(self, x, y):
-        msg = f"controller.stage.goto-position {x} {y}"
-        self.cmd(self, msg)
+        msg = f"controller.stage.goto-position {int(x)} {int(y)}"
+        self.cmd(msg)
         pass
     
     def get_position(self):
         return self.cmd("controller.stage.position.get")
     
     def is_moving(self):
-        pass #todo
+        return self.cmd("controller.stage.busy.get")
+
+    def set_max_speed(self,speed):
+        msg = f"controller.stage.speed.set {speed}"
+        self.cmd(msg)
