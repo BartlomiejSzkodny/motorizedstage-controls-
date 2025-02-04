@@ -25,6 +25,9 @@ class STLApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.sections = []
         self.prior_connected = False
+
+        self.move_on_outline = False
+        self.plot_interiors_only = True  # Add a boolean variable to control plotting
         
         self.padding = 0.5  # Padding for the laser 
     
@@ -45,69 +48,93 @@ class STLApp:
         self.layer_entry.grid(row=1, column=1, padx=10, pady=10)
 
         # Line Spacing
-        tk.Label(root, text="Line Spacing (mm):").grid(row=6, column=0, padx=10, pady=10)
+        tk.Label(root, text="Line Spacing (mm):").grid(row=1, column=2, padx=10, pady=10)
         self.line_spacing_var = tk.DoubleVar(value=0.5)
         self.line_spacing_entry = tk.Entry(root, textvariable=self.line_spacing_var, width=10)
-        self.line_spacing_entry.grid(row=6, column=1, padx=10, pady=10)
+        self.line_spacing_entry.grid(row=1, column=3, padx=10, pady=10)
+
+        # Scale of the layer
+        tk.Label(root, text="Scale of the layer:").grid(row=2, column=0, padx=10, pady=10)
+        self.scale_var = tk.DoubleVar(value=1.0)
+        self.scale_entry = tk.Entry(root, textvariable=self.scale_var, width=10)
+        self.scale_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        # Velocity selection
+        tk.Label(root, text="Velocity (um/s):").grid(row=2, column=2, padx=10, pady=10)
+        self.velocity_var = tk.DoubleVar(value=10)
+        self.velocity_entry = tk.Entry(root, textvariable=self.velocity_var, width=10)
+        self.velocity_entry.grid(row=2, column=3, padx=10, pady=10)
 
         # Slice Button
         self.slice_button = tk.Button(root, text="Slice STL", command=self.slice_stl)
         self.slice_button.grid(row=3, column=0, columnspan=2, pady=10)
-        # Scale of the layer
-        tk.Label(root, text="Scale of the layer:").grid(row=2, column=2, padx=10, pady=10)
-        self.scale_var = tk.DoubleVar(value=1.0)
-        self.scale_entry = tk.Entry(root, textvariable=self.scale_var, width=10)
-        self.scale_entry.grid(row=2, column=3, padx=10, pady=10)
 
-
-
-
-        #velocity selection
-        tk.Label(root, text="Velocity (um/s):").grid(row=2, column=0, padx=10, pady=10)
-        self.velocity_var = tk.DoubleVar(value=10)
-        self.velocity_entry = tk.Entry(root, textvariable=self.velocity_var, width=10)
-        self.velocity_entry.grid(row=2, column=1, padx=10, pady=10)
-
-
+        # Simulation Options
+        tk.Label(root, text="Simulation Options:").grid(row=3, column=2, padx=10, pady=10)
+        self.simulation_listbox = tk.Listbox(root, height=3)
+        self.simulation_listbox.grid(row=3, column=3, padx=10, pady=10)
+        self.simulation_listbox.bind('<<ListboxSelect>>', self.on_simulation_select)
+        self.simulation_listbox.insert(tk.END, "Normal")
+        self.simulation_listbox.insert(tk.END, "Move on outline")
+        self.simulation_listbox.insert(tk.END, "Plot interiors only")
 
         # Output
         self.output_frame = tk.Frame(root)
-        self.output_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+        self.output_frame.grid(row=4, column=0, columnspan=4, padx=10, pady=10)
         self.figure, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.output_frame)
         self.canvas.get_tk_widget().pack()
 
-        # Adjust padding for Layer Selection
-        tk.Label(root, text="Select Layer:").grid(row=3, column=2, sticky='n')
+        # Layer Selection
+        tk.Label(root, text="Select Layer:").grid(row=5, column=0, padx=10, pady=10)
         self.layer_listbox = tk.Listbox(root, height=10)
-        self.layer_listbox.grid(row=4, column=2, rowspan=6, sticky='n')
+        self.layer_listbox.grid(row=6, column=0, padx=10, pady=10)
         self.layer_listbox.bind('<<ListboxSelect>>', self.display_layer)
 
-        # Adjust padding for Select Ports
-        tk.Label(root, text="Select Ports:").grid(row=3, column=4, sticky='n')
-        self.select_ports_button = tk.Listbox(root, height=10)
-        self.select_ports_button.grid(row=4, column=4, rowspan=6, sticky='n')
-        self.select_ports_button.bind('<<ListboxSelect>>', self.connectPrior)
         # Layer Selection for Processing
-        tk.Label(root, text="Select Layers for Processing:").grid(row=3, column=3, sticky='n')
+        tk.Label(root, text="Select Layers for Processing:").grid(row=5, column=1, padx=10, pady=10)
         self.layer_selection_listbox = tk.Listbox(root, selectmode=tk.EXTENDED, height=10)
-        self.layer_selection_listbox.grid(row=4, column=3, rowspan=6, sticky='n')
+        self.layer_selection_listbox.grid(row=6, column=1, padx=10, pady=10)
+
+        # Select Ports
+        tk.Label(root, text="Select Ports:").grid(row=5, column=2, padx=10, pady=10)
+        self.select_ports_button = tk.Listbox(root, height=10)
+        self.select_ports_button.grid(row=6, column=2, padx=10, pady=10)
+        self.select_ports_button.bind('<<ListboxSelect>>', self.connectPrior)
 
         # Refresh ports button
         self.refresh_ports_button = tk.Button(root, text="Refresh Ports", command=self.refresh_ports)
-        self.refresh_ports_button.grid(row=5, column=2, columnspan=2, sticky='n')
+        self.refresh_ports_button.grid(row=7, column=2, padx=10, pady=10)
 
         # Laser start button
         self.laser_start_button = tk.Button(root, text="Start Laser", command=self.start_laser)
-        self.laser_start_button.grid(row=9, column=0, columnspan=2, pady=10)
+        self.laser_start_button.grid(row=7, column=0, padx=10, pady=10)
 
-        # Go in the rectangle to show the max and min x and y
+        # Show Max and Min button
         self.show_max_min_button = tk.Button(root, text="Show Max and Min", command=self.show_max_min)
-        self.show_max_min_button.grid(row=7, column=0, columnspan=2, pady=10)
+        self.show_max_min_button.grid(row=7, column=1, padx=10, pady=10)
 
         # Set the x and y start position
         self.xy_entry = tk.Button(root, text="Set X,Y Starting", command=self.set_xy)
         self.xy_entry.grid(row=8, column=0, columnspan=2, pady=10)
+
+        
+        
+    
+
+        
+
+        
+
+        
+
+
+
+
+
+
+
+
 
         
         """_summary_ = This function is used to load an STL file and display a message box if the file is loaded successfully
@@ -156,6 +183,21 @@ class STLApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to slice STL file: {e}")
 
+    def on_simulation_select(self, event):
+        selection = event.widget.curselection()
+        if selection:
+            index = selection[0]
+            if index == 0:
+                self.move_on_outline = False
+                self.plot_interiors_only = False
+            elif index == 1:
+                self.move_on_outline = True
+                self.plot_interiors_only = False
+            elif index == 2:
+                self.move_on_outline = False
+                self.plot_interiors_only = True
+            self.display_layer(event)
+
         """_summary_ = This function is used to display the selected layer in the output frame.
         """
     def display_layer(self, event):
@@ -175,16 +217,51 @@ class STLApp:
         self.ax.set_xlim(min(all_x)-self.padding, max(all_x)+self.padding)
         self.ax.set_ylim(min(all_y)-self.padding, max(all_y)+self.padding)
         
-        
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
             if index < len(self.sections):
                 section = self.sections[index]
 
-                if section is not None:
-                    polygons = section.polygons_full
-                    scale = self.scale_var.get()
+            if section is not None:
+                polygons = section.polygons_full
+                scale = self.scale_var.get()
+                if self.move_on_outline:
+                    self.ax.clear()
+                    for polygon in polygons:
+                        for interior in polygon.interiors:
+                            ix, iy = interior.xy
+                            ix = [coord*scale for coord in ix]
+                            iy = [coord*scale for coord in iy]
+                            self.ax.plot(ix, iy, 'r--')  # Plot inner boundaries with dashed lines
+                elif self.plot_interiors_only:
+                    self.ax.clear()
+                    min_x, max_x = min(all_x), max(all_x)
+                    min_y, max_y = min(all_y), max(all_y)
+                    line_spacing = self.line_spacing_var.get()
+                    for polygon in polygons:
+                        for interior in polygon.interiors:
+                            ix, iy = interior.xy
+                            ix = [coord*scale for coord in ix]
+                            iy = [coord*scale for coord in iy]
+                            y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
+                            for y_line in y_lines:
+                                intersections = []
+                                for i in range(len(ix) - 1):
+                                    dy = iy[i+1] - iy[i]
+                                    if abs(dy) < 1e-9:
+                                        continue
+                                    if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
+                                        x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
+                                        intersections.append(x_intersect)
+                                intersections.sort()
+                                for i in range(0, len(intersections), 2):
+                                    if i+1 < len(intersections):
+                                        start_point = (intersections[i], y_line)
+                                        end_point = (intersections[i+1], y_line)
+                                        self.ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
+                else:
+                    self.ax.clear()
                     for polygon in polygons:
                         x, y = polygon.exterior.xy
                         x = [coord*scale for coord in x]
@@ -196,8 +273,16 @@ class STLApp:
                             iy = [coord*scale for coord in iy]
                             self.ax.plot(ix, iy, 'r--')  # Plot inner boundaries with dashed lines
                     self.ax.set_title(f"Layer {index}: {len(polygons)} polygons")
-                else:
-                    self.ax.set_title(f"Layer {index}: No intersection")
+            else:
+                self.ax.set_title(f"Layer {index}: No intersection")
+
+            if index == 0 and section is not None:
+                x, y = section.polygons_full[0].exterior.xy
+                self.ax.plot(x[0], y[0], 'ro')
+            
+                self.canvas.draw()
+            else:
+                self.ax.set_title(f"Layer {index}: No intersection")
 
                 if index == 0 and section is not None:
                     x, y = section.polygons_full[0].exterior.xy
@@ -251,6 +336,7 @@ class STLApp:
     def process_layers(self, selected_layers):
         line_spacing = self.line_spacing_var.get()
         speed = self.velocity_var.get()
+        self.prior.cmd("controller.stage.speed.set 100")
         
         # Calculate the bounds for all layers
         all_x, all_y = [], []
@@ -272,67 +358,114 @@ class STLApp:
         min_y, max_y = min(all_y), max(all_y)
         self.laser_running = True
         
-        plot_interiors_only = True  # Add a boolean variable to control plotting
+        
+
 
         for layer_index in selected_layers:
             section = self.sections[layer_index]
             self.laser_ax.clear()
             if section is not None:
                 polygons = section.polygons_full
-                for polygon in polygons:
-                    x, y = polygon.exterior.xy
-                    y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
-                    for y_line in y_lines:
-                        if self.laser_running:
-                            intersections = []
-                            if not plot_interiors_only:  # Plot exteriors if the flag is False
-                                for i in range(len(x) - 1):
-                                    dy = y[i+1] - y[i]
-                                    if abs(dy) < 1e-9:
-                                        continue
-                                    if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
-                                        x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
-                                        intersections.append(x_intersect)
-                            for interior in polygon.interiors:
-                                ix, iy = interior.xy
-                                ix = [coord*scale for coord in ix]
-                                iy = [coord*scale for coord in iy]
-                                for i in range(len(ix) - 1):
-                                    dy = iy[i+1] - iy[i]
-                                    if abs(dy) < 1e-9:
-                                        continue
-                                    if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
-                                        x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
-                                        intersections.append(x_intersect)
-                            intersections.sort()
-                            for i in range(0, len(intersections), 2):
-                                if i+1 < len(intersections):
-                                    start_point = (intersections[i], y_line)
-                                    end_point = (intersections[i+1], y_line)
-                                    self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
-                                    self.laser_ax.set_title(f"Layer {layer_index}")
-                                    self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
-                                    self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
-                                    self.laser_ax.set_aspect('equal', adjustable='box')
-                                    current =self.prior.get_position()[1].split(',')
-                                    print(current)
-                                    distance = (abs((int(current[0]))-abs(start_point[0]*scale))**2+(abs(int(current[1]))-abs(start_point[1]*scale))**2)**0.5
-                                    self.prior.move_to_position(self.x + start_point[0]*scale, self.y + start_point[1]*scale)
-                                    print(type(speed))
-                                    print(type(distance))
-                                    print(distance/(speed*1000))
-                                    time.sleep(distance/(speed*1000))
-                                    distance = ((abs(end_point[0])*scale)-abs(start_point[0]*scale))**2+(abs(end_point[1]*scale)-abs(start_point[1]*scale)**2)**0.5
-                                    #self.prior.start_laser(self.prior)
-                                    self.prior.move_to_position(self.x+end_point[0]*scale,self.y+end_point[1]*scale)
-                                    time.sleep(distance/(speed*1000))
-                                    #self.prior.stop_laser(self.prior)
-                                    try:
-                                        self.laser_canvas.draw()
-                                        self.laser_window.update()
-                                    except tk.TclError:
-                                        return
-                                    self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
+                if self.move_on_outline:
+                    self.laser_ax.clear()
+                    for polygon in polygons:
+                        for interior in polygon.interiors:
+                            ix, iy = interior.xy
+                            self.ax.plot(ix, iy, 'r--')  # Plot inner boundaries with dashed lines
+                            x1 = ix[0]
+                            y1 = iy[0]
+                            current = self.prior.get_position()[1].split(',')
+                            distance = ((int(current[0]) - (x1 * scale + self.x)) ** 2 + (int(current[1]) - (y1 * scale + self.y)) ** 2) ** 0.5
+                            self.prior.cmd("controller.stage.speed.set 1000")
+                            self.prior.move_to_position(self.x + x1 * scale, self.y + y1 * scale)
+                            self.prior.cmd("controller.stage.speed.set 100")
+                            print(distance/2)
+                            time.sleep((distance / 1000+0.2))
+                            for i in range(len(ix)-1):
+                                
+                                self.laser_ax.plot([ix[i]*scale, ix[i+1]*scale], [iy[i]*scale, iy[i+1]*scale], color='red')
+                                self.laser_ax.set_title(f"Layer {layer_index}")
+                                self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
+                                self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
+                                self.laser_ax.set_aspect('equal', adjustable='box')
+                                xf, yf = self.prior.get_position()[1].split(',')
+                                self.prior.start_laser()
+                                time.sleep(0.3)
+                                self.prior.move_to_position(self.x + ix[i]*scale, self.y + iy[i]*scale)
+                                distance = ((int(xf) - (ix[i] * scale + self.x)) ** 2 + (int(yf) - (iy[i] * scale + self.y)) ** 2) ** 0.5
+                                print(distance / 100)
+                                time.sleep((distance / 100))
+                                self.prior.stop_laser()
+                                time.sleep(0.3)
+                                try:
+                                    self.laser_canvas.draw()
+                                    self.laser_window.update()
+                                except tk.TclError:
+                                    return
+                               
+                                
+
+
+                    # self.prior.stop_laser()
+                else:
+                    for polygon in polygons:
+                        x, y = polygon.exterior.xy
+                        y_lines = np.arange(min_y, max_y, line_spacing)  # Use user-specified line spacing
+                        for y_line in y_lines:
+                            if self.laser_running:
+                                intersections = []
+                                if not self.plot_interiors_only:  # Plot exteriors if the flag is False
+                                    for i in range(len(x) - 1):
+                                        dy = y[i+1] - y[i]
+                                        if abs(dy) < 1e-9:
+                                            continue
+                                        if (y[i] <= y_line <= y[i+1]) or (y[i+1] <= y_line <= y[i]):
+                                            x_intersect = x[i] + (y_line - y[i]) * (x[i+1] - x[i]) / dy
+                                            intersections.append(x_intersect)
+                                for interior in polygon.interiors:
+                                    ix, iy = interior.xy
+                                    ix = [coord*scale for coord in ix]
+                                    iy = [coord*scale for coord in iy]
+                                    for i in range(len(ix) - 1):
+                                        dy = iy[i+1] - iy[i]
+                                        if abs(dy) < 1e-9:
+                                            continue
+                                        if (iy[i] <= y_line <= iy[i+1]) or (iy[i+1] <= y_line <= iy[i]):
+                                            x_intersect = ix[i] + (y_line - iy[i]) * (ix[i+1] - ix[i]) / dy
+                                            intersections.append(x_intersect)
+                                intersections.sort()
+                                for i in range(0, len(intersections), 2):
+                                    if i+1 < len(intersections):
+                                        start_point = (intersections[i], y_line)
+                                        end_point = (intersections[i+1], y_line)
+                                        self.laser_ax.plot([start_point[0]*scale, end_point[0]*scale], [start_point[1]*scale, end_point[1]*scale], color='red')
+                                        self.laser_ax.set_title(f"Layer {layer_index}")
+                                        self.laser_ax.set_xlim(min_x-self.padding, max_x+self.padding)
+                                        self.laser_ax.set_ylim(min_y-self.padding, max_y+self.padding)
+                                        self.laser_ax.set_aspect('equal', adjustable='box')
+                                        time.sleep(0.3)
+                                        current = self.prior.get_position()[1].split(',')
+                                        print(current)
+                                        time.sleep(0.3)
+                                        distance = ((int(current[0]) - (start_point[0] * scale + self.x)) ** 2 + (int(current[1]) - (start_point[1] * scale + self.y)) ** 2) ** 0.5
+                                        self.prior.move_to_position(self.x + start_point[0] * scale, self.y + start_point[1] * scale)
+                                        print(distance / speed)
+                                        time.sleep(distance / speed * 0.01)
+                                        
+                                        distance = ((abs(end_point[0]) * scale - abs(start_point[0]) * scale) ** 2 + (abs(end_point[1]) * scale - abs(start_point[1]) * scale) ** 2) ** 0.5
+                                        self.prior.start_laser()
+                                        print("laser on")
+                                        self.prior.move_to_position(self.x + end_point[0] * scale, self.y + end_point[1] * scale)
+                                        print(distance / speed)
+                                        time.sleep(distance / speed * 0.01)
+                                        self.prior.stop_laser()
+                                        time.sleep(0.3)
+                                        try:
+                                            self.laser_canvas.draw()
+                                            self.laser_window.update()
+                                        except tk.TclError:
+                                            return
+                                        self.laser_window.after(10)  # wait time in milliseconds when the laser is moving
             self.laser_window.after(500)  # wait time before moving to the next layer
         self.laser_canvas.draw()
         self.laser_window.update()
@@ -397,11 +530,17 @@ class STLApp:
         print(f"Max Y: {max_y}, Min Y: {min_y}")
         print(type(self.x+min_x))
         prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
+        time.sleep(5)
+        self.prior.start_laser()
 
         prior.move_to_position(self.prior, self.x + max_x, self.y + min_y)
+        time.sleep(5)
         prior.move_to_position(self.prior, self.x + max_x, self.y + max_y)
+        time.sleep(5)
         prior.move_to_position(self.prior, self.x + min_x, self.y + max_y)
+        time.sleep(5)
         prior.move_to_position(self.prior, self.x + min_x, self.y + min_y)
+        self.prior.stop_laser()
     
     """_summary_= This function is used to set the x and y starting position for the laser engraving process.
     """

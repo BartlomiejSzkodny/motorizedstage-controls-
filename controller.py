@@ -72,10 +72,10 @@ class PriorController:
     
     
     def start_laser(self):
-        self.cmd(self,"controller.ttl.out.set 1")#TODO check ttl
+        self.cmd("controller.ttl.out.set 15")#TODO check ttl
     
     def stop_laser(self):
-        self.cmd(self,"controller.ttl.out.set 0")
+        self.cmd("controller.ttl.out.set 0")
 
     def velocitymove(self, x, y):
         msg = f"controller.stage.move-at-velocity {x} {y}"

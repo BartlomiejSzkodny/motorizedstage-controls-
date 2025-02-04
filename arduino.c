@@ -1,15 +1,15 @@
-//write code to controll by pwm analog 0 arduino
-int pwmPin = 9; // PWM pin connected to analog 0
+int inputPin = 9; // Input pin
+int outputPin = 13; // Output pin
 
 void setup() {
-    pinMode(pwmPin, OUTPUT);
-    pinMode(13, INPUT);
+    pinMode(inputPin, INPUT);
+    pinMode(outputPin, OUTPUT);
 }
 
 void loop() {
-    if (digitalRead(13) == HIGH) {
-        analogWrite(pwmPin, 255); // Set PWM to 100% duty cycle
+    if (digitalRead(inputPin) == HIGH) {
+        digitalWrite(outputPin, HIGH); // Set pin 13 high
     } else {
-    analogWrite(pwmPin, 0); // Set PWM to 50% duty cycle
+        digitalWrite(outputPin, LOW); // Set pin 13 low
     }
 }
