@@ -1,8 +1,9 @@
 import os
 import sys
 from ctypes import WinDLL, create_string_buffer
-from controller import PriorController
+from controller import PriorController as prior
 import time
+
 
 class debug:
             def run(self):
@@ -30,132 +31,120 @@ class debug:
                     elif command == "vmove":
                         velocity = input("Enter velocity(x,y): ").split(",")
                         self.move_at_velocity(velocity[0],velocity[1])
+                    elif command == "getvel":
+                        vel = self.cmd("controller.stage.speed.get")
+                        print(vel)
                     elif command == "ttl":
                         num = input("Enter 15 to 0: ")
                         self.cmd(f"controller.ttl.out.set {num}")
-                    elif command == "ptest":
-                        self.cmd("controller.stage.speed.set 100")
-                        self.cmd(f"controller.ttl.out.set 1")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 2")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 3")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 4")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 5")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 6")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 7")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 8")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 9")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 10")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 11")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 12")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 13")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
-                        self.cmd(f"controller.ttl.out.set 14")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
-                        time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
+                    elif command == "testplamka":
+                        current = self.cmd("controller.stage.position.get")[1].split(',')
+                        current = [int(current[0]),int(current[1])]
+                        print(current)
+                        self.cmd(f"controller.stage.speed.set 1000")
+                        time.sleep(0.3)
+                        #make rectangle where the test will be performed
                         self.cmd(f"controller.ttl.out.set 15")
-                        self.cmd(f"controller.stage.move-relative 0 1000")
+                        time.sleep(1)
+                        self.cmd(f"controller.stage.goto-position {current[0]-1000} {current[1]-1000}")
                         time.sleep(10)
-                        self.cmd(f"controller.stage.move-relative 100 -1000")
-                        time.sleep(11)
+                        self.cmd(f"controller.stage.goto-position {current[0]+5*1000+1000} {current[1]-1000}")
+                        time.sleep(10)
+                        self.cmd(f"controller.stage.goto-position {current[0]+5*1000+1000} {current[1]+10*1000+1000}")
+                        time.sleep(10)
+                        self.cmd(f"controller.stage.goto-position {current[0]-1000} {current[1]+10*1000+1000}")
+                        time.sleep(10)
+                        self.cmd(f"controller.stage.goto-position {current[0]-1000} {current[1]-1000}")
+                        time.sleep(10)
                         self.cmd(f"controller.ttl.out.set 0")
+                        time.sleep(10)
+                        c = input("is it okey? (y/n): ")
+                        if c == "y":
+                            pass
+                        else:
+                            print("Exiting...")
+                            break
                         
-                    elif command == "test":
-                        self.cmd(f"controller.stage.move-at-velocity 100 100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity -100 0")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity 100 -100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity 400 -100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity 100 100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity 0 -100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                        self.cmd(f"controller.stage.move-at-velocity 100 100")
-                        time.sleep(20)
-                        self.cmd(f"controller.stage.move-at-velocity 0 0")
-                    elif command == "te":
-                        while True:
-                            self.cmd("controller.stage.speed.set 10")
-                            self.cmd("controller.ttl.out.set 15")
-                            self.cmd(f"controller.stage.move-relative 0 1000")
-                            time.sleep(100)
-                            self.cmd("controller.ttl.out.set 0")
-                            self.cmd(f"controller.stage.move-relative 200 0")
-                            time.sleep(20)
-                            self.cmd("controller.stage.speed.set 100")
-                            self.cmd("controller.ttl.out.set 15")
-                            self.cmd(f"controller.stage.move-relative 0 -1000")
-                            time.sleep(100)
-                            self.cmd("controller.ttl.out.set 0")
-                            self.cmd(f"controller.stage.move-relative 200 0")
-                            time.sleep(20)
-                            self.cmd("controller.stage.speed.set 1000")
-                            self.cmd("controller.ttl.out.set 15")
-                            self.cmd(f"controller.stage.move-relative 0 1000")
-                            time.sleep(100)
-                            self.cmd("controller.ttl.out.set 0")
-                            self.cmd(f"controller.stage.move-relative -400 -1000")
+
+                        for x,czas in enumerate([0.1,0.2,0.3,0.4,0.5]):
+                            for y,moc in enumerate( [6,7,8,9,10,11,12,13,14,15]):
+                                self.set_position(current[0]+int(x*1000),current[1]+int(y*1000))
+                                time.sleep(5)
+                                self.cmd(f"controller.ttl.out.set {moc}")
+                                time.sleep(czas)
+                                self.cmd(f"controller.ttl.out.set 0")
+                                time.sleep(1)
+                                print(f"czas: {czas}, moc: {moc}")
+                                print(f"x: {x}, y: {y}")
+                    
+                    elif command == "testlinia":
+                        current = self.cmd("controller.stage.position.get")[1].split(',')
+                        current = [int(current[0]), int(current[1])]
+                        print(current)
+                        time.sleep(0.3)
+                        self.cmd(f"controller.ttl.out.set 1")
+                        self.cmd(f"controller.stage.goto-position {current[0] - 1000} {current[1] - 1000}")
+                        time.sleep(3)
+                        self.cmd(f"controller.stage.goto-position {current[0] - 1000} {current[1] + 4000 + 1000}")
+                        time.sleep(10)
+                        self.cmd(f"controller.stage.goto-position {current[0] + 30000 + 1000} {current[1] + 4000 + 1000}")
+                        time.sleep(46)
+                        self.cmd(f"controller.stage.goto-position {current[0] + 30000 + 1000} {current[1] - 1000}")
+                        time.sleep(10)
+                        self.cmd(f"controller.stage.goto-position {current[0] - 1000} {current[1] - 1000}")
+                        time.sleep(46)
+                        self.cmd(f"controller.ttl.out.set 0")
+                        c = input("is it okey? (y/n): ")
+                        if c == "y":
+                            pass
+                        else:
+                            print("Exiting...")
+                            break
+                        i = 0
+                        for moc in [1,2,3,4,5,6,7,8]:
+                            for velocity in [1500,2000,2500,3000,3500,4000,4500,5000]:
+                                self.set_position(current[0] + i * 300, current[1])
+                                time.sleep(5)
+                                self.cmd(f"controller.stage.speed.set {velocity}")
+                                time.sleep(5)
+                                self.cmd(f"controller.ttl.out.set {moc}")
+                                self.cmd(f"controller.stage.goto-position {current[0] + i * 300} {current[1] + 4000}")
+                                time.sleep(4000/velocity)
+                                self.cmd(f"controller.ttl.out.set 0")
+                                time.sleep(1)
+                                print(f"100+{i * 250}, 100")
+                                i += 1
+                            i+=3
+                    elif command == "testpolilinia":
+                        current = self.cmd("controller.stage.position.get")[1].split(',')
+                        current = [int(current[0]), int(current[1])]
+
+                        for i in range(20):
+                            input("Press enter to continue")
+                            self.set_position(current[0] + i * 1000, current[1])
+                            time.sleep(5)
+                            self.cmd(f"controller.ttl.out.set 1")
+                            time.sleep(1)
+                            self.cmd(f"controller.stage.goto-position {current[0] + i * 1000} {current[1] + 5000}")
+                            time.sleep(5)
+                            self.set_position(current[0] + i * 1000, current[1])
+                            time.sleep(5)
+                            self.cmd(f"controller.stage.goto-position {current[0] + i * 1000} {current[1] + 5000}")
+                            time.sleep(5)
+                            self.set_position(current[0] + i * 1000, current[1])
+                            time.sleep(5)
+
+                            self.cmd(f"controller.ttl.out.set 0")
+                            time.sleep(1)
+
+
+
+                        
+                                
+
+
+                                
+
 
 
 
@@ -186,7 +175,7 @@ class debug:
                 time.sleep(20)
             
             def set_position(self, x,y):
-                self.cmd(f"controller.stage.position.set {x} {y}")
+                self.cmd(f"controller.stage.goto-position {x} {y}")
 
             
 

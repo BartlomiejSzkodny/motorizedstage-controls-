@@ -58,21 +58,20 @@ class PriorController:
 
     def cmd(self, msg):
         rx = create_string_buffer(1000)
-        print(msg)
         ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.sessionID, create_string_buffer(msg.encode()), rx
         )
-        if ret:
-            print(f"Api error {ret}")
-        else:
-            print(f"OK {rx.value.decode()}")
+        # if ret:
+        #     print(f"Api error {ret}")
+        # else:
+        #     print(f"OK {rx.value.decode()}")
 
         return ret, rx.value.decode()
     
     
     
-    def start_laser(self):
-        self.cmd("controller.ttl.out.set 15")#TODO check ttl
+    def start_laser(self, power):
+        self.cmd(f"controller.ttl.out.set {power}")#TODO check ttl
     
     def stop_laser(self):
         self.cmd("controller.ttl.out.set 0")
